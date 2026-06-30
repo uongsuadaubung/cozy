@@ -394,41 +394,6 @@ body {
   overflow: hidden;
 }
 
-.btn-mark-read {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background-color: var(--surface-color);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  padding: 0;
-  line-height: 1;
-  z-index: 5;
-}
-
-.btn-mark-read:hover {
-  background-color: #2e7d32;
-  color: #ffffff;
-  border-color: #2e7d32;
-  transform: scale(1.15);
-}
-
-.post-card-container.read-fade .btn-mark-read {
-  background-color: #2e7d32;
-  color: #ffffff;
-  border-color: #2e7d32;
-}
 
 /* Reader Pane (Right Side) */
 .reader-pane {
@@ -495,6 +460,16 @@ body {
   font-size: 17px;
   line-height: 1.85;
   color: #d1d1ca;
+}
+
+.reader-body a {
+  color: #58a6ff;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.reader-body a:hover {
+  color: #79c0ff;
 }
 
 .reader-body h1, .reader-body h2, .reader-body h3 {

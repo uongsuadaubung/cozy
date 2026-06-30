@@ -188,16 +188,7 @@ export function App() {
     }
   };
 
-  const handleToggleRead = (e: Event, postId: string) => {
-    e.stopPropagation();
-    const newSet = new Set(readPosts);
-    if (newSet.has(postId)) {
-      newSet.delete(postId);
-    } else {
-      newSet.add(postId);
-    }
-    saveReadPosts(newSet);
-  };
+
 
 
 
@@ -281,13 +272,6 @@ export function App() {
                     <h2 className="post-title" style={{ paddingRight: "24px" }}>{post.title}</h2>
                     {post.summary && <p className="post-summary">{post.summary}</p>}
                   </a>
-                  <button 
-                    className="btn-mark-read" 
-                    onClick={(e) => handleToggleRead(e, post.id)} 
-                    title={isRead ? "Đánh dấu chưa đọc" : "Đánh dấu đã đọc"}
-                  >
-                    ✓
-                  </button>
                 </div>
               );
             })
