@@ -39,8 +39,10 @@ export function App() {
       
       const data = await response.json();
       setPosts(data);
+      return data;
     } catch (err) {
       console.error("Error loading Cozy feeds:", err);
+      return [];
     }
   };
 
@@ -86,12 +88,30 @@ export function App() {
         if (saved) {
           readSet = new Set(JSON.parse(saved));
         }
-        setReadPosts(readSet);
       } catch (err) {
         console.warn("Could not load read status:", err);
       }
 
-      await loadFeedData();
+      const fetchedPosts = await loadFeedData();
+
+      // Clean up stale read posts (remove IDs that do not exist in the current fetched data)
+      if (fetchedPosts && fetchedPosts.length > 0) {
+        const validIds = new Set(fetchedPosts.map((p: any) => p.id));
+        const cleanReadSet = new Set<string>();
+        for (const id of readSet) {
+          if (validIds.has(id)) {
+            cleanReadSet.add(id);
+          }
+        }
+        
+        // Only update localStorage if we actually filtered out some stale IDs
+        if (cleanReadSet.size !== readSet.size) {
+          readSet = cleanReadSet;
+          localStorage.setItem("cozy_read_posts", JSON.stringify([...readSet]));
+        }
+      }
+
+      setReadPosts(readSet);
 
       // Active post from query param
       const urlParams = new URLSearchParams(window.location.search);
