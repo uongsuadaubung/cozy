@@ -72,13 +72,18 @@ async function runSync() {
       console.log(`Found ${scrapedPosts.length} articles on front page of ${scraper.source}.`);
 
       for (const scrapedPost of scrapedPosts) {
-        // If post already exists and we are not forcing a recrawl, keep the existing content
-        if (postsMap.has(scrapedPost.id) && !forceRecrawl) {
+        // If post already exists, has valid content (not a placeholder/error), and we are not forcing a recrawl, keep it
+        const existing = postsMap.get(scrapedPost.id);
+        const hasValidContent = existing && 
+          existing.content && 
+          !existing.content.includes("Nội dung bài viết chưa được cào") && 
+          !existing.content.includes("Không thể tải nội dung bài viết");
+
+        if (existing && hasValidContent && !forceRecrawl) {
           // Update details if they changed, but keep content
-          const existing = postsMap.get(scrapedPost.id)!;
           postsMap.set(scrapedPost.id, {
             ...scrapedPost,
-            content: existing.content || "<p>Nội dung bài viết chưa được cào.</p>"
+            content: existing.content
           });
           continue;
         }
