@@ -1,0 +1,19 @@
+{
+  "imports": {
+    "hono": "npm:hono@^4.4.7",
+    "cheerio": "npm:cheerio@^1.0.0-rc.12",
+    "preact": "npm:preact@^10.22.0",
+    "preact/hooks": "npm:preact@^10.22.0/hooks",
+    "preact/jsx-runtime": "npm:preact@^10.22.0/jsx-runtime"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-read serve.ts",
+    "dev": "deno run --allow-net --allow-read serve.ts",
+    "sync": "deno run --allow-net --allow-read --allow-write sync.ts",
+    "build": "deno run --allow-run --allow-read --allow-write build.ts"
+  }
+}

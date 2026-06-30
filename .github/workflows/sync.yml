@@ -1,0 +1,39 @@
+name: Cozy Feed Crawl Data
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Chạy cào tin mỗi 6 tiếng
+  workflow_dispatch:      # Kích hoạt thủ công từ tab Actions
+
+permissions:
+  contents: write
+
+jobs:
+  crawl-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run Scraper Sync
+        run: deno task sync
+
+      - name: Commit and Push Data Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/data.json
+          
+          # Chỉ commit nếu data.json có thay đổi
+          if git diff --cached --quiet; then
+            echo "No changes in data.json. Skipping commit."
+          else
+            git commit -m "chore: auto-update news feeds [skip ci]"
+            git push
+          fi

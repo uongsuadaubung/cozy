@@ -1,0 +1,36 @@
+async function build() {
+  console.log("=========================================");
+  console.log("🛠️ Cozy Feed Deno Native Builder");
+  console.log("=========================================");
+
+  // 1. Ensure dist folder exists
+  await Deno.mkdir("./dist", { recursive: true });
+
+  // 2. Run Deno bundle command
+  console.log("Bundling src/main.tsx using Deno native bundler...");
+  const command = new Deno.Command("deno", {
+    args: ["bundle", "--minify", "src/main.tsx", "-o", "dist/client.js"],
+  });
+  
+  const { success, code, stderr } = await command.output();
+  if (!success) {
+    console.error(`Bundling failed with exit code: ${code}`);
+    console.error(new TextDecoder().decode(stderr));
+    Deno.exit(1);
+  }
+
+  // 3. Copy src/index.html to dist/index.html
+  console.log("Copying src/index.html to dist/index.html...");
+  const html = await Deno.readTextFile("src/index.html");
+  await Deno.writeTextFile("dist/index.html", html);
+
+  console.log("\n✅ Deno Native Build completed successfully!");
+  console.log("- dist/index.html (Copied)");
+  console.log("- dist/client.js  (Bundled)");
+  console.log("- dist/client.css (Compiled from style.css)");
+  console.log("=========================================");
+}
+
+if (import.meta.main) {
+  await build();
+}

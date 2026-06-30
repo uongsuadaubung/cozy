@@ -1,0 +1,49 @@
+name: Cozy Feed Deploy UI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'dist/data.json' # Tránh deploy lại UI chỉ vì data.json thay đổi
+  workflow_dispatch:      # Kích hoạt thủ công từ tab Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy-ui:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run Static HTML Build
+        run: deno task build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

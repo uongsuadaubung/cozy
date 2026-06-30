@@ -1,0 +1,12 @@
+# Deno KV databases and SQLite temp files
+*.db
+*.db-shm
+*.db-wal
+
+# Editor / OS files
+.vscode/
+.DS_Store
+thumbs.db
+
+# Task logs
+.system_generated/
