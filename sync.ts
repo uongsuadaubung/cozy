@@ -72,12 +72,11 @@ async function runSync() {
       console.log(`Found ${scrapedPosts.length} articles on front page of ${scraper.source}.`);
 
       for (const scrapedPost of scrapedPosts) {
-        // If post already exists, has valid content (not a placeholder/error), and we are not forcing a recrawl, keep it
+        // If post already exists, has valid content (not a placeholder), and we are not forcing a recrawl, keep it
         const existing = postsMap.get(scrapedPost.id);
         const hasValidContent = existing && 
           existing.content && 
-          !existing.content.includes("Nội dung bài viết chưa được cào") && 
-          !existing.content.includes("Không thể tải nội dung bài viết");
+          !existing.content.includes("Nội dung bài viết chưa được cào");
 
         if (existing && hasValidContent && !forceRecrawl) {
           // Update details if they changed, but keep content
@@ -97,16 +96,16 @@ async function runSync() {
           const content = await scraper.fetchContent(scrapedPost.url);
           const postWithContent: PostWithContent = {
             ...scrapedPost,
-            content: content || "<p>Nội dung bài viết trống.</p>"
+            content: content || "<p>Nội dung bài viết chưa được cào.</p>"
           };
           postsMap.set(scrapedPost.id, postWithContent);
           newPostsCount++;
         } catch (contentErr) {
           console.error(`   ❌ Failed to fetch content for ${scrapedPost.url}:`, contentErr);
-          // Save with error message so we don't keep trying to crawl it forever
+          // Save with the uniform placeholder so we will try to crawl it again on next run
           postsMap.set(scrapedPost.id, {
             ...scrapedPost,
-            content: `<p style="color: var(--hn-color)">Không thể tải nội dung bài viết. Lỗi: ${contentErr instanceof Error ? contentErr.message : String(contentErr)}</p>`
+            content: "<p>Nội dung bài viết chưa được cào.</p>"
           });
           newPostsCount++; // Count as new since we added it to map
         }
