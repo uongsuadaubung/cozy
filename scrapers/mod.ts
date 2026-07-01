@@ -10,6 +10,7 @@ import { TinhteScraper } from "./tinhte.ts";
 import { VnReviewScraper } from "./vnreview.ts";
 import { TechZScraper } from "./techz.ts";
 import { TechRumScraper } from "./techrum.ts";
+import { VnExpressScraper } from "./vnexpress.ts";
 import { Scraper } from "../types.ts";
 
 // Danh sách toàn bộ các Scraper sẽ được kích hoạt cào tin tức
@@ -26,4 +27,5 @@ export const scrapers: Scraper[] = [
   new VnReviewScraper(),
   new TechZScraper(),
   new TechRumScraper(),
+  new VnExpressScraper(),
 ];
