@@ -79,9 +79,10 @@ async function runSync() {
           !existing.content.includes("Nội dung bài viết chưa được cào");
 
         if (existing && hasValidContent && !forceRecrawl) {
-          // Update details if they changed, but keep content
+          // Update details if they changed, but keep content and original creation time
           postsMap.set(scrapedPost.id, {
             ...scrapedPost,
+            createdAt: existing.createdAt, // Giữ nguyên thời gian đăng bài gốc
             content: existing.content
           });
           continue;
