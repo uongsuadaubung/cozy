@@ -35,6 +35,7 @@ export function App() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [visibleSources, setVisibleSources] = useState<string[]>([]);
   const [sourceLabels, setSourceLabels] = useState<Record<string, string>>({ "All": "Tất cả tin" });
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   // Fetch posts data
   const loadFeedData = async () => {
@@ -157,6 +158,14 @@ export function App() {
     globalThis.addEventListener("hashchange", handleHashChange);
     handleHashChange(); // Run once initially
 
+    // Popstate handler for back/forward buttons (especially active post)
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(globalThis.location.search);
+      const postId = urlParams.get("post");
+      setActivePostId(postId);
+    };
+    globalThis.addEventListener("popstate", handlePopState);
+
     // Initialize read status & migration
     const initReadStatusAndData = async () => {
       let readSet = new Set<string>();
@@ -203,6 +212,7 @@ export function App() {
 
     return () => {
       globalThis.removeEventListener("hashchange", handleHashChange);
+      globalThis.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
@@ -285,6 +295,13 @@ export function App() {
     }
   };
 
+  const handleBackToFeed = () => {
+    setActivePostId(null);
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete("post");
+    globalThis.history.pushState({}, "", url.toString());
+  };
+
   const handleAddSource = (source: string) => {
     const nextSet = [...visibleSources, source];
     setVisibleSources(nextSet);
@@ -309,7 +326,7 @@ export function App() {
   }, [visibleSources, sourceLabels]);
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${activePost ? "has-active-post" : ""}`}>
       {/* 1. SIDEBAR */}
       <Sidebar
         activeSource={activeSource}
@@ -321,12 +338,17 @@ export function App() {
         onSelectSource={handleSelectSource}
         onAddSource={handleAddSource}
         onRemoveSource={handleRemoveSource}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* 2. MAIN FEED LIST */}
       <main className="feed-container">
         <header className="feed-header">
           <div className="feed-header-top">
+            <button className="menu-toggle-btn" onClick={() => setSidebarOpen(true)} title="Mở danh mục">
+              ☰
+            </button>
             <h1 className="feed-title">{sourceLabels[activeSource] || activeSource}</h1>
           </div>
           <div className="feed-controls">
@@ -404,6 +426,9 @@ export function App() {
           ? (
             <div className="reader-content" style={{ display: "block" }}>
               <div className="reader-header">
+                <button className="reader-back-btn" onClick={handleBackToFeed}>
+                  ← Quay lại
+                </button>
                 <div className="post-meta" style={{ marginBottom: "12px" }}>
                   <span
                     className="source-tag"

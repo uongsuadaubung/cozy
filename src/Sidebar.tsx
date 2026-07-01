@@ -10,6 +10,8 @@ interface SidebarProps {
   onSelectSource: (source: string) => void;
   onAddSource: (source: string) => void;
   onRemoveSource: (e: Event, source: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export function Sidebar({
@@ -22,6 +24,8 @@ export function Sidebar({
   onSelectSource,
   onAddSource,
   onRemoveSource,
+  isOpen,
+  onClose,
 }: SidebarProps) {
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -30,16 +34,34 @@ export function Sidebar({
     setShowDropdown(false);
   };
 
+  const handleSelectSourceWithClose = (source: string) => {
+    onSelectSource(source);
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="sidebar">
-      <a
-        href="#"
-        className="logo-container"
-        onClick={() => onSelectSource("All")}
-      >
-        <span className="logo-icon">☕</span>
-        <span className="logo-text">Cozy Feed</span>
-      </a>
+    <>
+      {/* Overlay background when drawer is open on mobile */}
+      {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
+
+      <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+        <div className="sidebar-header">
+          <a
+            href="#"
+            className="logo-container"
+            onClick={() => handleSelectSourceWithClose("All")}
+          >
+            <span className="logo-icon">☕</span>
+            <span className="logo-text">Cozy Feed</span>
+          </a>
+          {onClose && (
+            <button className="sidebar-close-btn" onClick={onClose} title="Đóng menu">
+              &times;
+            </button>
+          )}
+        </div>
 
       <div className="menu-section" style={{ position: "relative" }}>
         <div className="menu-title">
@@ -78,7 +100,7 @@ export function Sidebar({
           <li className="menu-item">
             <div className="menu-item-container">
               <a 
-                onClick={() => onSelectSource("All")} 
+                onClick={() => handleSelectSourceWithClose("All")} 
                 className={`menu-link ${activeSource === "All" ? "active" : ""}`}
               >
                 <span className="menu-link-text">{sourceLabels["All"] || "Tất cả tin"}</span>
@@ -96,7 +118,7 @@ export function Sidebar({
               <li key={source} className="menu-item">
                 <div className="menu-item-container visible-source-item">
                   <a 
-                    onClick={() => onSelectSource(source)} 
+                    onClick={() => handleSelectSourceWithClose(source)} 
                     className={`menu-link ${isActive ? "active" : ""}`}
                   >
                     <span className="menu-link-text">{label}</span>
@@ -124,5 +146,6 @@ export function Sidebar({
         </div>
       </div>
     </aside>
+    </>
   );
 }
