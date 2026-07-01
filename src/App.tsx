@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { Sidebar, SOURCE_LABELS } from "./Sidebar.tsx";
+import { Sidebar } from "./Sidebar.tsx";
 
 interface Post {
   id: string;
@@ -12,6 +12,19 @@ interface Post {
   content?: string;
 }
 
+// Helper to hash source name to a unique aesthetic HSL color for badge styling
+export function getSourceColor(source: string) {
+  let hash = 0;
+  for (let i = 0; i < source.length; i++) {
+    hash = source.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return {
+    color: `hsl(${hue}, 85%, 65%)`,
+    backgroundColor: `hsla(${hue}, 85%, 65%, 0.15)`
+  };
+}
+
 export function App() {
   // State variables
   const [posts, setPosts] = useState<Post[]>([]);
@@ -21,6 +34,7 @@ export function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [visibleSources, setVisibleSources] = useState<string[]>([]);
+  const [sourceLabels, setSourceLabels] = useState<Record<string, string>>({ "All": "Tất cả tin" });
 
   // Fetch posts data
   const loadFeedData = async () => {
@@ -58,8 +72,35 @@ export function App() {
     }
   };
 
+  // Fetch sources.json
+  const loadSources = async () => {
+    try {
+      let sourcesUrl = "sources.json";
+      if (globalThis.location.hostname.endsWith("github.io")) {
+        const username = globalThis.location.hostname.split(".")[0];
+        const repoName =
+          globalThis.location.pathname.split("/").filter(Boolean)[0];
+        if (username && repoName) {
+          sourcesUrl =
+            `https://raw.githubusercontent.com/${username}/${repoName}/main/sources.json`;
+        }
+      }
+
+      const response = await fetch(sourcesUrl);
+      if (response.ok) {
+        const labels = await response.json();
+        setSourceLabels(labels);
+      }
+    } catch (err) {
+      console.error("Error loading sources.json:", err);
+    }
+  };
+
   // Read URL parameters on startup
   useEffect(() => {
+    // Load dynamic sources labels
+    loadSources();
+
     // Load visible sources from localStorage or default to an empty list
     const savedSources = localStorage.getItem("cozy_visible_sources");
     if (savedSources) {
@@ -76,9 +117,9 @@ export function App() {
     // Hash change handler for routing source
     const handleHashChange = () => {
       const hash = globalThis.location.hash.slice(1);
-      if (hash && SOURCE_LABELS[hash]) {
+      if (hash) {
         setActiveSource(hash);
-      } else if (!hash) {
+      } else {
         setActiveSource("All");
       }
     };
@@ -158,7 +199,7 @@ export function App() {
   // Derive unread counts reactively
   const unreadCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    Object.keys(SOURCE_LABELS).forEach((s) => counts[s] = 0);
+    Object.keys(sourceLabels).forEach((s) => counts[s] = 0);
 
     posts.forEach((post) => {
       if (!readPosts.has(post.id)) {
@@ -170,7 +211,7 @@ export function App() {
       }
     });
     return counts;
-  }, [posts, readPosts, visibleSources]);
+  }, [posts, readPosts, visibleSources, sourceLabels]);
 
   // Derive filtered posts list
   const filteredPosts = useMemo(() => {
@@ -231,10 +272,10 @@ export function App() {
   };
 
   const hiddenSources = useMemo(() => {
-    return Object.keys(SOURCE_LABELS).filter(
+    return Object.keys(sourceLabels).filter(
       (source) => source !== "All" && !visibleSources.includes(source),
     );
-  }, [visibleSources]);
+  }, [visibleSources, sourceLabels]);
 
   return (
     <div className="app-container">
@@ -244,6 +285,7 @@ export function App() {
         unreadCounts={unreadCounts}
         visibleSources={visibleSources}
         hiddenSources={hiddenSources}
+        sourceLabels={sourceLabels}
         lastUpdatedText={lastUpdatedText}
         onSelectSource={handleSelectSource}
         onAddSource={handleAddSource}
@@ -254,7 +296,7 @@ export function App() {
       <main className="feed-container">
         <header className="feed-header">
           <div className="feed-header-top">
-            <h1 className="feed-title">{SOURCE_LABELS[activeSource]}</h1>
+            <h1 className="feed-title">{sourceLabels[activeSource] || activeSource}</h1>
           </div>
           <div className="feed-controls">
             <span className="feed-subtitle">
@@ -298,9 +340,10 @@ export function App() {
                     >
                       <div className="post-meta">
                         <span
-                          className={`source-tag ${post.source.toLowerCase()}`}
+                          className="source-tag"
+                          style={getSourceColor(post.source)}
                         >
-                          {post.source}
+                          {sourceLabels[post.source] || post.source}
                         </span>
                         <span>•</span>
                         <span>Tác giả: {post.author}</span>
@@ -332,9 +375,10 @@ export function App() {
               <div className="reader-header">
                 <div className="post-meta" style={{ marginBottom: "12px" }}>
                   <span
-                    className={`source-tag ${activePost.source.toLowerCase()}`}
+                    className="source-tag"
+                    style={getSourceColor(activePost.source)}
                   >
-                    {activePost.source}
+                    {sourceLabels[activePost.source] || activePost.source}
                   </span>
                   <span>•</span>
                   <span>Đăng bởi {activePost.author}</span>
@@ -375,7 +419,7 @@ export function App() {
                   color: "var(--text-secondary)",
                   maxWidth: "320px",
                   margin: "0 auto",
-                  lineHeights: "1.6",
+                  lineHeight: "1.6",
                 }}
               >
                 Nội dung bài viết đã được cào sạch, loại bỏ quảng cáo và sẽ hiển

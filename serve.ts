@@ -32,6 +32,8 @@ Deno.serve({ port: PORT }, async (req) => {
   let filepath = "./dist" + pathname;
   if (pathname === "/data.json") {
     filepath = "./data.json";
+  } else if (pathname === "/sources.json") {
+    filepath = "./sources.json";
   }
 
   try {
