@@ -32,6 +32,12 @@ export class DantriScraper implements Scraper {
 
         if (!href) return;
 
+        // Skip non-standard articles (videos, live coverage, photo essays)
+        const label = titleLink.attr("data-label");
+        if (label && ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)) {
+          return;
+        }
+
         const title = titleLink.text().trim() || titleLink.attr("title") || "";
         if (!title) return;
 
@@ -116,6 +122,12 @@ export class DantriScraper implements Scraper {
               const href = titleLink.attr("href");
 
               if (!href) return;
+
+              // Skip non-standard articles (videos, live coverage, photo essays)
+              const label = titleLink.attr("data-label");
+              if (label && ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)) {
+                return;
+              }
 
               const title = titleLink.text().trim() || titleLink.attr("title") || "";
               if (!title) return;
