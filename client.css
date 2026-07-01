@@ -7,16 +7,7 @@
   --text-secondary: #a1a196;
   --accent-color: #d4af37; /* Cozy Gold */
   --accent-hover: #bfa030;
-  --hn-color: #ff6600;      /* HackerNews Orange */
-  --genk-color: #1a73e8;    /* GenK Blue */
-  --bluefin-color: #00bcd4;  /* Bluefin Cyan */
-  --system76-color: #f58220; /* System76 Orange */
-  --windowslatest-color: #0078d4; /* Windows Blue */
-  --omglinux-color: #ff6f3c; /* Linux Orange */
-  --windowscentral-color: #107c10; /* Xbox Green */
-  --tinhte-color: #0062fe; /* Tinh te Blue */
-  --vnreview-color: #cc4611; /* VnReview Red-Orange */
-  
+
   --sidebar-width: 260px;
   --feed-width: 400px;
 }
@@ -28,7 +19,8 @@
 body {
   background-color: var(--bg-color);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
   margin: 0;
   padding: 0;
   display: flex;
@@ -366,16 +358,7 @@ body {
   border-radius: 4px;
 }
 
-.source-tag.hackernews { background-color: rgba(255, 102, 0, 0.15); color: var(--hn-color); }
-.source-tag.omgubuntu { background-color: rgba(221, 72, 20, 0.15); color: var(--system76-color); }
-.source-tag.genk { background-color: rgba(26, 115, 232, 0.15); color: var(--genk-color); }
-.source-tag.bluefin { background-color: rgba(0, 188, 212, 0.15); color: var(--bluefin-color); }
-.source-tag.system76 { background-color: rgba(245, 130, 32, 0.15); color: var(--system76-color); }
-.source-tag.windowslatest { background-color: rgba(0, 120, 212, 0.15); color: var(--windowslatest-color); }
-.source-tag.omglinux { background-color: rgba(255, 111, 60, 0.15); color: var(--omglinux-color); }
-.source-tag.windowscentral { background-color: rgba(16, 124, 16, 0.15); color: var(--windowscentral-color); }
-.source-tag.tinhte { background-color: rgba(0, 98, 254, 0.15); color: var(--tinhte-color); }
-.source-tag.vnreview { background-color: rgba(204, 70, 17, 0.15); color: var(--vnreview-color); }
+/* Source tag specific colors are set dynamically via inline styles */
 
 .post-title {
   margin: 0 0 8px 0;
@@ -395,7 +378,6 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 
 /* Reader Pane (Right Side) */
 .reader-pane {
@@ -474,7 +456,9 @@ body {
   color: #79c0ff;
 }
 
-.reader-body h1, .reader-body h2, .reader-body h3 {
+.reader-body h1,
+.reader-body h2,
+.reader-body h3 {
   font-family: 'Inter', sans-serif;
   color: var(--text-primary);
   margin-top: 36px;
@@ -635,7 +619,7 @@ body {
   .btn-action {
     padding: 8px;
   }
-  
+
   .feed-container {
     width: 100%;
     height: 45%;
@@ -710,8 +694,14 @@ body {
   animation: slideDown 0.15s ease-out;
 }
 @keyframes slideDown {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .dropdown-item {
@@ -736,4 +726,3 @@ body {
   color: var(--text-secondary);
   text-align: center;
 }
-
