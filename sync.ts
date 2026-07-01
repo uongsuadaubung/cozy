@@ -68,8 +68,14 @@ async function runSync() {
   for (const scraper of scrapersToRun) {
     console.log(`\n📡 Scraping source: ${scraper.source}...`);
     try {
-      const scrapedPosts = await scraper.fetchPosts();
-      console.log(`Found ${scrapedPosts.length} articles on front page of ${scraper.source}.`);
+      const allScrapedPosts = await scraper.fetchPosts();
+      console.log(`Found ${allScrapedPosts.length} articles on front page of ${scraper.source}.`);
+
+      // Chỉ giữ lại tối đa 50 tin mới nhất để xử lý, tránh fetch nội dung của các tin cũ thừa
+      const scrapedPosts = allScrapedPosts.slice(0, MAX_POSTS_PER_SOURCE);
+      if (allScrapedPosts.length > MAX_POSTS_PER_SOURCE) {
+        console.log(`   [INFO] Sliced scraped list from ${allScrapedPosts.length} to ${MAX_POSTS_PER_SOURCE} newest posts.`);
+      }
 
       for (const scrapedPost of scrapedPosts) {
         // If post already exists, has valid content (not a placeholder), and we are not forcing a recrawl, keep it
