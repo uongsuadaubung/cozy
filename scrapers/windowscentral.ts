@@ -81,7 +81,7 @@ export class WindowsCentralScraper implements Scraper {
     }
 
     // Loại bỏ các thẻ thừa, quảng cáo, share links
-    contentEl.find("script, style, iframe, .ad-wrapper, .adsbygoogle, .pop-under, .social-share, .newsletter-signup").remove();
+    contentEl.find("script, style, iframe, .ad-wrapper, .adsbygoogle, .pop-under, .social-share, .newsletter-signup, #utility-bar, .utility-bar").remove();
     // Loại bỏ phần quảng cáo reddit và hình ảnh đi kèm
     contentEl.find("a[href*='reddit.com/r/windowscentral'], p:has(a[href*='reddit.com/r/windowscentral'])").remove();
     const cleanHtml = contentEl.html() || "";
