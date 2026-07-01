@@ -11,7 +11,8 @@ export const SOURCE_LABELS: Record<string, string> = {
   "WindowsLatest": "Windows Latest",
   "OmgLinux": "OMG! Linux!",
   "WindowsCentral": "Windows Central",
-  "Tinhte": "Tinh tế"
+  "Tinhte": "Tinh tế",
+  "VnReview": "VnReview"
 };
 
 interface SidebarProps {

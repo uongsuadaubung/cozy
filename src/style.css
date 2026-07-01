@@ -15,6 +15,7 @@
   --omglinux-color: #ff6f3c; /* Linux Orange */
   --windowscentral-color: #107c10; /* Xbox Green */
   --tinhte-color: #0062fe; /* Tinh te Blue */
+  --vnreview-color: #cc4611; /* VnReview Red-Orange */
   
   --sidebar-width: 260px;
   --feed-width: 400px;
@@ -374,6 +375,7 @@ body {
 .source-tag.omglinux { background-color: rgba(255, 111, 60, 0.15); color: var(--omglinux-color); }
 .source-tag.windowscentral { background-color: rgba(16, 124, 16, 0.15); color: var(--windowscentral-color); }
 .source-tag.tinhte { background-color: rgba(0, 98, 254, 0.15); color: var(--tinhte-color); }
+.source-tag.vnreview { background-color: rgba(204, 70, 17, 0.15); color: var(--vnreview-color); }
 
 .post-title {
   margin: 0 0 8px 0;
