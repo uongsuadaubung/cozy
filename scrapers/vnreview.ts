@@ -13,11 +13,13 @@ export class VnReviewScraper implements Scraper {
       const url = `https://vnreview.vn/ewr-porta/page-${page}`;
       try {
         const response = await fetch(url, {
-          headers: COMMON_HEADERS
+          headers: COMMON_HEADERS,
         });
 
         if (!response.ok) {
-          console.warn(`[VnReview] Failed to fetch page ${page}: Status ${response.status}`);
+          console.warn(
+            `[VnReview] Failed to fetch page ${page}: Status ${response.status}`,
+          );
           continue;
         }
 
@@ -35,14 +37,19 @@ export class VnReviewScraper implements Scraper {
           if (!title) return;
 
           // Normalize relative URL to absolute URL
-          const postUrl = href.startsWith("http") ? href : `https://vnreview.vn${href}`;
+          const postUrl = href.startsWith("http")
+            ? href
+            : `https://vnreview.vn${href}`;
 
           // Extract unique ID from url (XenForo pattern matching last digit id)
           const idMatch = postUrl.match(/\.(\d+)\/?$/);
-          const id = idMatch ? `vnreview-${idMatch[1]}` : `vnreview-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = idMatch
+            ? `vnreview-${idMatch[1]}`
+            : `vnreview-${encodeURIComponent(postUrl).slice(-20)}`;
 
           // Extract author
-          const author = $el.find(".author-block").first().text().trim() || "VnReview";
+          const author = $el.find(".author-block").first().text().trim() ||
+            "VnReview";
 
           // Extract date
           const timeEl = $el.find("time.u-dt").first();
@@ -69,7 +76,7 @@ export class VnReviewScraper implements Scraper {
             url: postUrl,
             source: this.source,
             author,
-            createdAt
+            createdAt,
           });
         });
       } catch (err) {
@@ -82,7 +89,7 @@ export class VnReviewScraper implements Scraper {
 
   async fetchContent(url: string): Promise<string> {
     const response = await fetch(url, {
-      headers: COMMON_HEADERS
+      headers: COMMON_HEADERS,
     });
 
     if (!response.ok) {

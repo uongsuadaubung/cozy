@@ -6,7 +6,7 @@ async function sha256(str: string): Promise<string> {
   const msgUint8 = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export class TinhteScraper implements Scraper {
@@ -17,14 +17,18 @@ export class TinhteScraper implements Scraper {
     const response = await fetch(url, { headers: COMMON_HEADERS });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Tinh te homepage: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch Tinh te homepage: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
     const posts: Post[] = [];
 
-    const articles = $("[class*='latest-threads'] article, .latest-threads article").toArray();
+    const articles = $(
+      "[class*='latest-threads'] article, .latest-threads article",
+    ).toArray();
     let index = 0;
     for (const art of articles) {
       const $art = $(art);
@@ -37,14 +41,18 @@ export class TinhteScraper implements Scraper {
       }
 
       // Lọc bỏ các link trùng lặp hoặc link rác nếu có
-      if (posts.some(p => p.url === postUrl)) continue;
+      if (posts.some((p) => p.url === postUrl)) continue;
 
-      const titleLink = $art.find("a[href*='/thread/']").filter((_, el) => $(el).text().trim().length > 0).first();
+      const titleLink = $art.find("a[href*='/thread/']").filter((_, el) =>
+        $(el).text().trim().length > 0
+      ).first();
       const title = titleLink.attr("title")?.trim() || titleLink.text().trim();
       if (!title) continue;
 
-      const author = $art.find(".author, [data-author], a.username").first().text().trim() || "Tinh tế";
-      
+      const author =
+        $art.find(".author, [data-author], a.username").first().text().trim() ||
+        "Tinh tế";
+
       const summary = $art.find(".excerpt").text().trim();
 
       // Trích xuất thread ID từ URL
@@ -69,7 +77,7 @@ export class TinhteScraper implements Scraper {
         source: this.source,
         author,
         createdAt,
-        summary: summary.slice(0, 200) + (summary.length > 200 ? "..." : "")
+        summary: summary.slice(0, 200) + (summary.length > 200 ? "..." : ""),
       });
     }
 
@@ -80,12 +88,14 @@ export class TinhteScraper implements Scraper {
     const response = await fetch(url, { headers: COMMON_HEADERS });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Tinh te thread: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch Tinh te thread: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    
+
     // Find the main article container (which contains all parts of the thread starter's post in layout 1)
     let bodies = $();
     const articleEl = $("article.content, article").first();
@@ -106,13 +116,16 @@ export class TinhteScraper implements Scraper {
     }
 
     // Clean garbage in all xfBody elements inside the selected bodies
-    bodies.find("script, style, iframe, .ad-wrapper, .adsbygoogle, .social-share, .button-row, .reaction-bar").remove();
+    bodies.find(
+      "script, style, iframe, .ad-wrapper, .adsbygoogle, .social-share, .button-row, .reaction-bar",
+    ).remove();
 
     let cleanHtml = "";
     bodies.each((i, el) => {
       const bodyHtml = $(el).html() || "";
       if (i > 0) {
-        cleanHtml += `<hr class="thread-post-separator" style="border: 0; border-top: 1px dashed var(--border-color); margin: 24px 0;" />`;
+        cleanHtml +=
+          `<hr class="thread-post-separator" style="border: 0; border-top: 1px dashed var(--border-color); margin: 24px 0;" />`;
       }
       cleanHtml += bodyHtml;
     });

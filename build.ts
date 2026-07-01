@@ -11,7 +11,7 @@ async function build() {
   const command = new Deno.Command("deno", {
     args: ["bundle", "--minify", "src/main.tsx", "-o", "dist/client.js"],
   });
-  
+
   const { success, code, stderr } = await command.output();
   if (!success) {
     console.error(`Bundling failed with exit code: ${code}`);

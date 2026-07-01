@@ -34,21 +34,27 @@ async function runSync() {
   console.log("=========================================");
 
   // Parse arguments
-  const filterSource = Deno.args.filter(arg => !arg.startsWith("-"))[0];
-  const forceRecrawl = Deno.args.includes("--force") || Deno.args.includes("-f");
+  const filterSource = Deno.args.filter((arg) => !arg.startsWith("-"))[0];
+  const forceRecrawl = Deno.args.includes("--force") ||
+    Deno.args.includes("-f");
 
-  const activeScrapers = filterSource 
-    ? scrapers.filter(s => 
-        s.source.toLowerCase() === filterSource.toLowerCase() || 
-        s.source.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === filterSource.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
-      )
+  const activeScrapers = filterSource
+    ? scrapers.filter((s) =>
+      s.source.toLowerCase() === filterSource.toLowerCase() ||
+      s.source.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() ===
+        filterSource.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
+    )
     : scrapers;
 
   if (filterSource && activeScrapers.length === 0) {
-    console.log(`⚠️ Warning: No scraper found matching "${filterSource}". Running all scrapers.`);
+    console.log(
+      `⚠️ Warning: No scraper found matching "${filterSource}". Running all scrapers.`,
+    );
   }
 
-  const scrapersToRun = (filterSource && activeScrapers.length > 0) ? activeScrapers : scrapers;
+  const scrapersToRun = (filterSource && activeScrapers.length > 0)
+    ? activeScrapers
+    : scrapers;
 
   // 1. Load existing posts
   const existingPosts = await loadExistingPosts();
@@ -69,19 +75,23 @@ async function runSync() {
     console.log(`\n📡 Scraping source: ${scraper.source}...`);
     try {
       const allScrapedPosts = await scraper.fetchPosts();
-      console.log(`Found ${allScrapedPosts.length} articles on front page of ${scraper.source}.`);
+      console.log(
+        `Found ${allScrapedPosts.length} articles on front page of ${scraper.source}.`,
+      );
 
       // Chỉ giữ lại tối đa 50 tin mới nhất để xử lý, tránh fetch nội dung của các tin cũ thừa
       const scrapedPosts = allScrapedPosts.slice(0, MAX_POSTS_PER_SOURCE);
       if (allScrapedPosts.length > MAX_POSTS_PER_SOURCE) {
-        console.log(`   [INFO] Sliced scraped list from ${allScrapedPosts.length} to ${MAX_POSTS_PER_SOURCE} newest posts.`);
+        console.log(
+          `   [INFO] Sliced scraped list from ${allScrapedPosts.length} to ${MAX_POSTS_PER_SOURCE} newest posts.`,
+        );
       }
 
       for (const scrapedPost of scrapedPosts) {
         // If post already exists, has valid content (not a placeholder), and we are not forcing a recrawl, keep it
         const existing = postsMap.get(scrapedPost.id);
-        const hasValidContent = existing && 
-          existing.content && 
+        const hasValidContent = existing &&
+          existing.content &&
           !existing.content.includes("Nội dung bài viết chưa được cào");
 
         if (existing && hasValidContent && !forceRecrawl) {
@@ -89,7 +99,7 @@ async function runSync() {
           postsMap.set(scrapedPost.id, {
             ...scrapedPost,
             createdAt: existing.createdAt, // Giữ nguyên thời gian đăng bài gốc
-            content: existing.content
+            content: existing.content,
           });
           continue;
         }
@@ -98,21 +108,24 @@ async function runSync() {
         console.log(`   [FETCH] Fetching content for: "${scrapedPost.title}"`);
         try {
           // Wait slightly to avoid rate-limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           const content = await scraper.fetchContent(scrapedPost.url);
           const postWithContent: PostWithContent = {
             ...scrapedPost,
-            content: content || "<p>Nội dung bài viết chưa được cào.</p>"
+            content: content || "<p>Nội dung bài viết chưa được cào.</p>",
           };
           postsMap.set(scrapedPost.id, postWithContent);
           newPostsCount++;
         } catch (contentErr) {
-          console.error(`   ❌ Failed to fetch content for ${scrapedPost.url}:`, contentErr);
+          console.error(
+            `   ❌ Failed to fetch content for ${scrapedPost.url}:`,
+            contentErr,
+          );
           // Save with the uniform placeholder so we will try to crawl it again on next run
           postsMap.set(scrapedPost.id, {
             ...scrapedPost,
-            content: "<p>Nội dung bài viết chưa được cào.</p>"
+            content: "<p>Nội dung bài viết chưa được cào.</p>",
           });
           newPostsCount++; // Count as new since we added it to map
         }
@@ -128,7 +141,7 @@ async function runSync() {
   console.log("\n-----------------------------------------");
   console.log("Processing and sorting posts...");
   const allPosts = Array.from(postsMap.values());
-  
+
   // Group by source
   const groupedBySource = new Map<string, PostWithContent[]>();
   for (const post of allPosts) {
@@ -143,11 +156,11 @@ async function runSync() {
   for (const [source, sourcePosts] of groupedBySource.entries()) {
     // Sort descending by createdAt
     sourcePosts.sort((a, b) => b.createdAt - a.createdAt);
-    
+
     // Slice to limit
     const sliced = sourcePosts.slice(0, MAX_POSTS_PER_SOURCE);
     limitedPosts.push(...sliced);
-    
+
     const diff = sourcePosts.length - sliced.length;
     if (diff > 0) {
       console.log(`🧹 Pruned ${diff} older posts for source: ${source}`);

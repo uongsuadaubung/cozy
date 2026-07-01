@@ -20,18 +20,20 @@ export class OmgLinuxScraper implements Scraper {
     // Phân tích danh sách bài viết từ các thẻ <article>
     $("article").each((index, element) => {
       const $el = $(element);
-      const titleLink = $el.find(".entry-title a, h3.entry-title a, h2.entry-title a").first();
+      const titleLink = $el.find(
+        ".entry-title a, h3.entry-title a, h2.entry-title a",
+      ).first();
       const href = titleLink.attr("href");
       const title = titleLink.text().trim();
 
       if (!href || !title) return;
 
       // Tránh trùng lặp bài viết
-      if (posts.some(p => p.url === href)) return;
+      if (posts.some((p) => p.url === href)) return;
 
       // Mặc định tên tác giả là "OMG! Linux!" vì trang chủ không hiển thị tên tác giả
       const author = "OMG! Linux!";
-      
+
       // Trích xuất ngày đăng từ thẻ <time>
       const timeEl = $el.find("time").first();
       const dateText = timeEl.attr("datetime") || timeEl.text().trim();
@@ -56,7 +58,7 @@ export class OmgLinuxScraper implements Scraper {
         url: href,
         source: this.source,
         author,
-        createdAt: finalCreatedAt
+        createdAt: finalCreatedAt,
       });
     });
 
@@ -67,7 +69,9 @@ export class OmgLinuxScraper implements Scraper {
     const response = await fetch(url, { headers: COMMON_HEADERS });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch OMG! Linux! article: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch OMG! Linux! article: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
@@ -79,17 +83,27 @@ export class OmgLinuxScraper implements Scraper {
     }
 
     // Loại bỏ các thành phần rác như quảng cáo, script, share links
-    contentEl.find("script, style, iframe, .ad-wrapper, .adsbygoogle, .pop-under, .social-share-buttons").remove();
-    
+    contentEl.find(
+      "script, style, iframe, .ad-wrapper, .adsbygoogle, .pop-under, .social-share-buttons",
+    ).remove();
+
     // Loại bỏ khung đăng ký email quảng cáo Jetpack và các form đăng ký email
-    contentEl.find(".wp-block-jetpack-subscriptions, .wp-block-jetpack-subscriptions__container, .jetpack-subscribe-feed, form.subscribe-form").remove();
-    
+    contentEl.find(
+      ".wp-block-jetpack-subscriptions, .wp-block-jetpack-subscriptions__container, .jetpack-subscribe-feed, form.subscribe-form",
+    ).remove();
+
     // Tìm các form chứa email input và xóa sạch form/div bao quanh
-    contentEl.find("input[type='email'], input[name='email']").closest("form, div, section").remove();
-    
+    contentEl.find("input[type='email'], input[name='email']").closest(
+      "form, div, section",
+    ).remove();
+
     // Xóa các dòng text liên quan đến Subscribe
-    contentEl.find("h3:contains('Discover more from'), h2:contains('Discover more from'), h4:contains('Discover more from'), p:contains('Discover more from')").remove();
-    contentEl.find("p:contains('Subscribe to get'), p:contains('sent to your email'), p:contains('Type your email')").remove();
+    contentEl.find(
+      "h3:contains('Discover more from'), h2:contains('Discover more from'), h4:contains('Discover more from'), p:contains('Discover more from')",
+    ).remove();
+    contentEl.find(
+      "p:contains('Subscribe to get'), p:contains('sent to your email'), p:contains('Type your email')",
+    ).remove();
 
     const cleanHtml = contentEl.html() || "";
     return cleanHtml;

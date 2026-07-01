@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { Sidebar, SOURCE_LABELS } from "./Sidebar.tsx";
 
 interface Post {
@@ -19,7 +19,6 @@ export function App() {
   const [activeSource, setActiveSource] = useState<string>("All");
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isGitHubPages, setIsGitHubPages] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [visibleSources, setVisibleSources] = useState<string[]>([]);
 
@@ -27,17 +26,21 @@ export function App() {
   const loadFeedData = async () => {
     try {
       let dataUrl = "data.json";
-      if (window.location.hostname.endsWith("github.io")) {
-        const username = window.location.hostname.split(".")[0];
-        const repoName = window.location.pathname.split("/").filter(Boolean)[0];
+      if (globalThis.location.hostname.endsWith("github.io")) {
+        const username = globalThis.location.hostname.split(".")[0];
+        const repoName =
+          globalThis.location.pathname.split("/").filter(Boolean)[0];
         if (username && repoName) {
-          dataUrl = `https://raw.githubusercontent.com/${username}/${repoName}/main/data.json`;
+          dataUrl =
+            `https://raw.githubusercontent.com/${username}/${repoName}/main/data.json`;
         }
       }
-      
+
       const response = await fetch(dataUrl);
-      if (!response.ok) throw new Error(`Could not fetch data.json from ${dataUrl}`);
-      
+      if (!response.ok) {
+        throw new Error(`Could not fetch data.json from ${dataUrl}`);
+      }
+
       // Read Last-Modified header to get actual deploy/sync time
       const lastMod = response.headers.get("Last-Modified");
       if (lastMod) {
@@ -45,7 +48,7 @@ export function App() {
       } else {
         setLastUpdated(new Date());
       }
-      
+
       const data = await response.json();
       setPosts(data);
       return data;
@@ -55,13 +58,8 @@ export function App() {
     }
   };
 
-
-
   // Read URL parameters on startup
   useEffect(() => {
-    // Check hostname
-    setIsGitHubPages(window.location.hostname.endsWith("github.io"));
-
     // Load visible sources from localStorage or default to an empty list
     const savedSources = localStorage.getItem("cozy_visible_sources");
     if (savedSources) {
@@ -77,17 +75,15 @@ export function App() {
 
     // Hash change handler for routing source
     const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
+      const hash = globalThis.location.hash.slice(1);
       if (hash && SOURCE_LABELS[hash]) {
         setActiveSource(hash);
       } else if (!hash) {
         setActiveSource("All");
       }
     };
-    window.addEventListener("hashchange", handleHashChange);
+    globalThis.addEventListener("hashchange", handleHashChange);
     handleHashChange(); // Run once initially
-
-
 
     // Initialize read status & migration
     const initReadStatusAndData = async () => {
@@ -105,14 +101,14 @@ export function App() {
 
       // Clean up stale read posts (remove IDs that do not exist in the current fetched data)
       if (fetchedPosts && fetchedPosts.length > 0) {
-        const validIds = new Set(fetchedPosts.map((p: any) => p.id));
+        const validIds = new Set(fetchedPosts.map((p: Post) => p.id));
         const cleanReadSet = new Set<string>();
         for (const id of readSet) {
           if (validIds.has(id)) {
             cleanReadSet.add(id);
           }
         }
-        
+
         // Only update localStorage if we actually filtered out some stale IDs
         if (cleanReadSet.size !== readSet.size) {
           readSet = cleanReadSet;
@@ -123,7 +119,7 @@ export function App() {
       setReadPosts(readSet);
 
       // Active post from query param
-      const urlParams = new URLSearchParams(window.location.search);
+      const urlParams = new URLSearchParams(globalThis.location.search);
       const postId = urlParams.get("post");
       if (postId) {
         setActivePostId(postId);
@@ -134,14 +130,14 @@ export function App() {
     initReadStatusAndData();
 
     return () => {
-      window.removeEventListener("hashchange", handleHashChange);
+      globalThis.removeEventListener("hashchange", handleHashChange);
     };
   }, []);
 
   // Compute text for relative updated time
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdated) return "Đang kiểm tra...";
-    
+
     const diffMs = new Date().getTime() - lastUpdated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
@@ -162,9 +158,9 @@ export function App() {
   // Derive unread counts reactively
   const unreadCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    Object.keys(SOURCE_LABELS).forEach(s => counts[s] = 0);
-    
-    posts.forEach(post => {
+    Object.keys(SOURCE_LABELS).forEach((s) => counts[s] = 0);
+
+    posts.forEach((post) => {
       if (!readPosts.has(post.id)) {
         counts[post.source] = (counts[post.source] || 0) + 1;
         // Only count towards "All" if the source is currently added/visible
@@ -178,7 +174,7 @@ export function App() {
 
   // Derive filtered posts list
   const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
+    return posts.filter((post) => {
       if (activeSource === "All") {
         return visibleSources.includes(post.source);
       }
@@ -188,13 +184,13 @@ export function App() {
 
   // Derive active post object
   const activePost = useMemo(() => {
-    return posts.find(p => p.id === activePostId) || null;
+    return posts.find((p) => p.id === activePostId) || null;
   }, [posts, activePostId]);
 
   // Handlers
   const handleSelectSource = (source: string) => {
     setActiveSource(source);
-    window.location.hash = source;
+    globalThis.location.hash = source;
   };
 
   const handleSelectPost = (postId: string) => {
@@ -204,11 +200,11 @@ export function App() {
       newSet.add(postId);
       saveReadPosts(newSet);
     }
-    
+
     setActivePostId(postId);
-    const url = new URL(window.location.href);
+    const url = new URL(globalThis.location.href);
     url.searchParams.set("post", postId);
-    window.history.pushState({}, "", url.toString());
+    globalThis.history.pushState({}, "", url.toString());
 
     // Scroll reader to top
     const readerPane = document.getElementById("reader-pane");
@@ -216,10 +212,6 @@ export function App() {
       readerPane.scrollTop = 0;
     }
   };
-
-
-
-
 
   const handleAddSource = (source: string) => {
     const nextSet = [...visibleSources, source];
@@ -229,28 +221,25 @@ export function App() {
 
   const handleRemoveSource = (e: Event, source: string) => {
     e.stopPropagation();
-    const nextSet = visibleSources.filter(s => s !== source);
+    const nextSet = visibleSources.filter((s) => s !== source);
     setVisibleSources(nextSet);
     localStorage.setItem("cozy_visible_sources", JSON.stringify(nextSet));
     if (activeSource === source) {
       setActiveSource("All");
-      window.location.hash = "All";
+      globalThis.location.hash = "All";
     }
   };
 
   const hiddenSources = useMemo(() => {
     return Object.keys(SOURCE_LABELS).filter(
-      source => source !== "All" && !visibleSources.includes(source)
+      (source) => source !== "All" && !visibleSources.includes(source),
     );
   }, [visibleSources]);
 
-
-
   return (
     <div className="app-container">
-      
       {/* 1. SIDEBAR */}
-      <Sidebar 
+      <Sidebar
         activeSource={activeSource}
         unreadCounts={unreadCounts}
         visibleSources={visibleSources}
@@ -269,86 +258,132 @@ export function App() {
           </div>
           <div className="feed-controls">
             <span className="feed-subtitle">
-              {loading ? "Đang tải bài viết..." : `Hiển thị ${filteredPosts.length} bài viết`}
+              {loading
+                ? "Đang tải bài viết..."
+                : `Hiển thị ${filteredPosts.length} bài viết`}
             </span>
           </div>
         </header>
 
         <div className="feed-list">
-          {!loading && filteredPosts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
-              Không có bài viết nào ở bộ lọc này.
-            </div>
-          ) : (
-            filteredPosts.map(post => {
-              const isRead = readPosts.has(post.id);
-              const isActive = activePostId === post.id;
-              const formattedDate = new Date(post.createdAt).toLocaleDateString("vi-VN");
-              
-              return (
-                <div key={post.id} className={`post-card-container ${isRead ? "read-fade" : ""}`}>
-                  <a 
-                    className={`post-card ${isActive ? "active" : ""}`} 
-                    onClick={() => handleSelectPost(post.id)}
+          {!loading && filteredPosts.length === 0
+            ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Không có bài viết nào ở bộ lọc này.
+              </div>
+            )
+            : (
+              filteredPosts.map((post) => {
+                const isRead = readPosts.has(post.id);
+                const isActive = activePostId === post.id;
+                const formattedDate = new Date(post.createdAt)
+                  .toLocaleDateString("vi-VN");
+
+                return (
+                  <div
+                    key={post.id}
+                    className={`post-card-container ${
+                      isRead ? "read-fade" : ""
+                    }`}
                   >
-                    <div className="post-meta">
-                      <span className={`source-tag ${post.source.toLowerCase()}`}>{post.source}</span>
-                      <span>•</span>
-                      <span>Tác giả: {post.author}</span>
-                      <span>•</span>
-                      <span>{formattedDate}</span>
-                    </div>
-                    <h2 className="post-title" style={{ paddingRight: "24px" }}>{post.title}</h2>
-                    {post.summary && <p className="post-summary">{post.summary}</p>}
-                  </a>
-                </div>
-              );
-            })
-          )}
+                    <a
+                      className={`post-card ${isActive ? "active" : ""}`}
+                      onClick={() => handleSelectPost(post.id)}
+                    >
+                      <div className="post-meta">
+                        <span
+                          className={`source-tag ${post.source.toLowerCase()}`}
+                        >
+                          {post.source}
+                        </span>
+                        <span>•</span>
+                        <span>Tác giả: {post.author}</span>
+                        <span>•</span>
+                        <span>{formattedDate}</span>
+                      </div>
+                      <h2
+                        className="post-title"
+                        style={{ paddingRight: "24px" }}
+                      >
+                        {post.title}
+                      </h2>
+                      {post.summary && (
+                        <p className="post-summary">{post.summary}</p>
+                      )}
+                    </a>
+                  </div>
+                );
+              })
+            )}
         </div>
       </main>
 
       {/* 3. READER PANE */}
       <section className="reader-pane" id="reader-pane">
-        {activePost ? (
-          <div className="reader-content" style={{ display: "block" }}>
-            <div className="reader-header">
-              <div className="post-meta" style={{ marginBottom: "12px" }}>
-                <span className={`source-tag ${activePost.source.toLowerCase()}`}>{activePost.source}</span>
-                <span>•</span>
-                <span>Đăng bởi {activePost.author}</span>
-                <span>•</span>
-                <span>{new Date(activePost.createdAt).toLocaleDateString("vi-VN")}</span>
+        {activePost
+          ? (
+            <div className="reader-content" style={{ display: "block" }}>
+              <div className="reader-header">
+                <div className="post-meta" style={{ marginBottom: "12px" }}>
+                  <span
+                    className={`source-tag ${activePost.source.toLowerCase()}`}
+                  >
+                    {activePost.source}
+                  </span>
+                  <span>•</span>
+                  <span>Đăng bởi {activePost.author}</span>
+                  <span>•</span>
+                  <span>
+                    {new Date(activePost.createdAt).toLocaleDateString("vi-VN")}
+                  </span>
+                </div>
+                <h1 className="reader-title">{activePost.title}</h1>
+                <div>
+                  <a
+                    href={activePost.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="reader-link"
+                  >
+                    🔗 Xem bài viết gốc tại trang nguồn
+                  </a>
+                </div>
               </div>
-              <h1 className="reader-title">{activePost.title}</h1>
-              <div>
-                <a 
-                  href={activePost.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="reader-link"
-                >
-                  🔗 Xem bài viết gốc tại trang nguồn
-                </a>
-              </div>
-            </div>
-            
-            <article 
-              className="reader-body" 
-              dangerouslySetInnerHTML={{ __html: activePost.content || "<p>Nội dung bài viết chưa được cào sạch hoặc bị trống.</p>" }}
-            />
-          </div>
-        ) : (
-          <div className="reader-placeholder">
-            <div className="reader-placeholder-icon">📖</div>
-            <h3>Chọn một bài viết để đọc</h3>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", maxWidth: "320px", margin: "0 auto", lineHeights: "1.6" }}>
-              Nội dung bài viết đã được cào sạch, loại bỏ quảng cáo và sẽ hiển thị trực tiếp tại đây ngay lập tức.
-            </p>
-          </div>
-        )}
-      </section>
 
+              <article
+                className="reader-body"
+                dangerouslySetInnerHTML={{
+                  __html: activePost.content ||
+                    "<p>Nội dung bài viết chưa được cào sạch hoặc bị trống.</p>",
+                }}
+              />
+            </div>
+          )
+          : (
+            <div className="reader-placeholder">
+              <div className="reader-placeholder-icon">📖</div>
+              <h3>Chọn một bài viết để đọc</h3>
+              <p
+                style={{
+                  fontSize: "14px",
+                  color: "var(--text-secondary)",
+                  maxWidth: "320px",
+                  margin: "0 auto",
+                  lineHeights: "1.6",
+                }}
+              >
+                Nội dung bài viết đã được cào sạch, loại bỏ quảng cáo và sẽ hiển
+                thị trực tiếp tại đây ngay lập tức.
+              </p>
+            </div>
+          )}
+      </section>
     </div>
   );
 }

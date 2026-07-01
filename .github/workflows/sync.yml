@@ -2,8 +2,8 @@ name: Cozy Feed Crawl Data
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Chạy cào tin mỗi 6 tiếng
-  workflow_dispatch:      # Kích hoạt thủ công từ tab Actions
+    - cron: "0 */6 * * *" # Chạy cào tin mỗi 6 tiếng
+  workflow_dispatch: # Kích hoạt thủ công từ tab Actions
 
 permissions:
   contents: write
@@ -29,7 +29,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data.json
-          
+
           # Chỉ commit nếu data.json có thay đổi
           if git diff --cached --quiet; then
             echo "No changes in data.json. Skipping commit."

@@ -6,7 +6,7 @@ async function sha256(str: string): Promise<string> {
   const msgUint8 = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function parseRelativeDate(dateText: string): number {
@@ -23,7 +23,7 @@ function parseRelativeDate(dateText: string): number {
       return now.getTime();
     }
   }
-  
+
   if (text.includes("minute") || text.includes("min")) {
     const match = text.match(/(\d+)/);
     if (match) {
@@ -42,7 +42,15 @@ function parseRelativeDate(dateText: string): number {
     }
   }
 
-  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayNames = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
   const targetDayIndex = dayNames.indexOf(text);
   if (targetDayIndex !== -1) {
     const currentDayIndex = now.getDay();
@@ -73,10 +81,12 @@ class ChallengedFetcher {
   }
 
   private saveCookies(response: Response) {
-    const setCookies = typeof response.headers.getSetCookie === "function" 
-      ? response.headers.getSetCookie() 
-      : (response.headers.get("set-cookie") ? [response.headers.get("set-cookie")!] : []);
-      
+    const setCookies = typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie()
+      : (response.headers.get("set-cookie")
+        ? [response.headers.get("set-cookie")!]
+        : []);
+
     for (const cookie of setCookies) {
       const parts = cookie.split(";")[0].split("=");
       if (parts.length >= 2) {
@@ -92,7 +102,7 @@ class ChallengedFetcher {
     for (const [key, value] of Object.entries(COMMON_HEADERS)) {
       headers.set(key, value);
     }
-    
+
     if (this.cookies.size > 0) {
       headers.set("Cookie", this.getCookieHeader());
     }
@@ -103,7 +113,10 @@ class ChallengedFetcher {
 
     if (response.status === 403) {
       const html = await response.clone().text();
-      if (html.includes("Checking your browser") || html.includes("X-Hashcash-Solution")) {
+      if (
+        html.includes("Checking your browser") ||
+        html.includes("X-Hashcash-Solution")
+      ) {
         const solved = await this.solveChallenge(url, html, fetchStartTime);
         if (solved) {
           headers.set("Cookie", this.getCookieHeader());
@@ -116,7 +129,11 @@ class ChallengedFetcher {
     return response;
   }
 
-  private async solveChallenge(baseUrl: string, _html: string, fetchStartTime: number): Promise<boolean> {
+  private async solveChallenge(
+    baseUrl: string,
+    _html: string,
+    fetchStartTime: number,
+  ): Promise<boolean> {
     const rawHcc = this.cookies.get("_hcc");
     if (!rawHcc) return false;
     const parts = rawHcc.split(":");
@@ -143,7 +160,7 @@ class ChallengedFetcher {
     const elapsed = Date.now() - fetchStartTime;
     if (elapsed < 4000) {
       const waitTime = 4000 - elapsed;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
 
     const challengeUrl = new URL("/__challenge", baseUrl).toString();
@@ -161,7 +178,7 @@ class ChallengedFetcher {
 
     const postRes = await fetch(challengeUrl, {
       method: "POST",
-      headers: postHeaders
+      headers: postHeaders,
     });
 
     this.saveCookies(postRes);
@@ -183,7 +200,9 @@ export class OmgUbuntuScraper implements Scraper {
       try {
         const response = await this.client.fetch(url);
         if (!response.ok) {
-          console.error(`Failed to fetch OMG! Ubuntu! Page ${page}: Status ${response.status}`);
+          console.error(
+            `Failed to fetch OMG! Ubuntu! Page ${page}: Status ${response.status}`,
+          );
           continue;
         }
 
@@ -191,8 +210,8 @@ export class OmgUbuntuScraper implements Scraper {
         const $ = cheerio.load(html);
 
         const hasBgContainer = $(".homepage-layout__bg-container").length > 0;
-        const selector = hasBgContainer 
-          ? ".homepage-layout__bg-container a.layout__title-link" 
+        const selector = hasBgContainer
+          ? ".homepage-layout__bg-container a.layout__title-link"
           : "a.layout__title-link";
 
         $(selector).each((_, element) => {
@@ -201,18 +220,22 @@ export class OmgUbuntuScraper implements Scraper {
 
           if (!postUrl) return;
 
-          const title = $el.find(".portholes-layout__title").text().trim() 
-                     || $el.find("h3.layout__title").text().trim() 
-                     || $el.text().trim();
-                     
+          const title = $el.find(".portholes-layout__title").text().trim() ||
+            $el.find("h3.layout__title").text().trim() ||
+            $el.text().trim();
+
           const summary = $el.find(".portholes-layout__subtitle").text().trim();
 
           const idMatch = postUrl.match(/\/([^\/]+)\/?$/);
-          const id = idMatch ? `omg-${idMatch[1]}` : `omg-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = idMatch
+            ? `omg-${idMatch[1]}`
+            : `omg-${encodeURIComponent(postUrl).slice(-20)}`;
 
           // Tìm ngày đăng bài từ class .layout__date nếu có
           let foundDateText = "";
-          const wrapper = $el.closest(".tile-layout__item, .portholes-layout__item, .mosaic-tile");
+          const wrapper = $el.closest(
+            ".tile-layout__item, .portholes-layout__item, .mosaic-tile",
+          );
           if (wrapper.length) {
             const dateEl = wrapper.find(".layout__date").first();
             if (dateEl.length) {
@@ -224,7 +247,7 @@ export class OmgUbuntuScraper implements Scraper {
           if (foundDateText) {
             baseTime = parseRelativeDate(foundDateText);
           }
-          
+
           // Nếu không tìm thấy hoặc không parse được ngày chi tiết, dựa vào URL lấy ra năm và tháng
           if (!baseTime) {
             const dateMatch = postUrl.match(/\/(\d{4})\/(\d{2})\//);
@@ -242,7 +265,7 @@ export class OmgUbuntuScraper implements Scraper {
           globalIndex++;
 
           // Tránh trùng lặp bài viết giữa các trang
-          if (!posts.some(p => p.id === id)) {
+          if (!posts.some((p) => p.id === id)) {
             posts.push({
               id,
               title,
@@ -250,7 +273,7 @@ export class OmgUbuntuScraper implements Scraper {
               source: this.source,
               author: "OMG! Ubuntu!",
               createdAt,
-              summary: summary || undefined
+              summary: summary || undefined,
             });
           }
         });
@@ -278,17 +301,26 @@ export class OmgUbuntuScraper implements Scraper {
       return "Không tìm thấy thẻ chứa nội dung bài viết.";
     }
 
-    contentEl.find(".sharedaddy, .wpcnt, .author-bio, script, style, iframe").remove();
-    
+    contentEl.find(".sharedaddy, .wpcnt, .author-bio, script, style, iframe")
+      .remove();
+
     // Loại bỏ khung đăng ký email quảng cáo Jetpack và các form đăng ký email
-    contentEl.find(".wp-block-jetpack-subscriptions, .wp-block-jetpack-subscriptions__container, .jetpack-subscribe-feed, form.subscribe-form").remove();
-    
+    contentEl.find(
+      ".wp-block-jetpack-subscriptions, .wp-block-jetpack-subscriptions__container, .jetpack-subscribe-feed, form.subscribe-form",
+    ).remove();
+
     // Tìm các form chứa email input và xóa sạch form/div bao quanh
-    contentEl.find("input[type='email'], input[name='email']").closest("form, div, section").remove();
-    
+    contentEl.find("input[type='email'], input[name='email']").closest(
+      "form, div, section",
+    ).remove();
+
     // Xóa các dòng text liên quan đến Subscribe
-    contentEl.find("h3:contains('Discover more from'), h2:contains('Discover more from'), h4:contains('Discover more from'), p:contains('Discover more from')").remove();
-    contentEl.find("p:contains('Subscribe to get'), p:contains('sent to your email'), p:contains('Type your email')").remove();
+    contentEl.find(
+      "h3:contains('Discover more from'), h2:contains('Discover more from'), h4:contains('Discover more from'), p:contains('Discover more from')",
+    ).remove();
+    contentEl.find(
+      "p:contains('Subscribe to get'), p:contains('sent to your email'), p:contains('Type your email')",
+    ).remove();
 
     return contentEl.html() || "Nội dung bài viết trống.";
   }
