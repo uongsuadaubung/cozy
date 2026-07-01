@@ -10,7 +10,8 @@ export type NewsSource =
   | "Tinhte"
   | "VnReview"
   | "TechZ"
-  | "TechRum";
+  | "TechRum"
+  | "VnExpress";
 
 export interface Post {
   id: string; // ID duy nhất (ví dụ: "hn-12345" hoặc "omg-67890")
