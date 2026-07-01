@@ -816,3 +816,87 @@ body {
   color: var(--text-secondary);
   text-align: center;
 }
+
+/* Welcome Onboarding panel */
+.welcome-container {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 32px;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.4s ease-out;
+}
+
+.welcome-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.welcome-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: var(--accent-color);
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.quick-sources-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.quick-source-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.quick-source-btn:hover {
+  border-color: var(--accent-color);
+  background-color: rgba(212, 175, 55, 0.1);
+  transform: translateY(-2px);
+}
+
+.quick-source-add-icon {
+  font-size: 10px;
+  color: var(--accent-color);
+}
+
+.welcome-tip {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: var(--bg-color);
+  padding: 10px 14px;
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-color);
+  text-align: left;
+  line-height: 1.5;
+}

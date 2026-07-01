@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { Sidebar } from "./Sidebar.tsx";
+import { Welcome } from "./Welcome.tsx";
+import { Reader } from "./Reader.tsx";
 
 interface Post {
   id: string;
@@ -371,7 +373,15 @@ export function App() {
         </header>
 
         <div className="feed-list">
-          {!loading && filteredPosts.length === 0
+          {!loading && visibleSources.length === 0
+            ? (
+              <Welcome
+                sourceLabels={sourceLabels}
+                visibleSources={visibleSources}
+                onAddSource={handleAddSource}
+              />
+            )
+            : !loading && filteredPosts.length === 0
             ? (
               <div
                 style={{
@@ -431,69 +441,11 @@ export function App() {
       </main>
 
       {/* 3. READER PANE */}
-      <section className="reader-pane" id="reader-pane">
-        {activePost
-          ? (
-            <div className="reader-content" style={{ display: "block" }}>
-              <div className="reader-header">
-                <button className="reader-back-btn" onClick={handleBackToFeed}>
-                  ← Quay lại
-                </button>
-                <div className="post-meta" style={{ marginBottom: "12px" }}>
-                  <span
-                    className="source-tag"
-                    style={getSourceColor(activePost.source)}
-                  >
-                    {sourceLabels[activePost.source] || activePost.source}
-                  </span>
-                  <span>•</span>
-                  <span>Đăng bởi {activePost.author}</span>
-                  <span>•</span>
-                  <span>
-                    {new Date(activePost.createdAt).toLocaleDateString("vi-VN")}
-                  </span>
-                </div>
-                <h1 className="reader-title">{activePost.title}</h1>
-                <div>
-                  <a
-                    href={activePost.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="reader-link"
-                  >
-                    🔗 Xem bài viết gốc tại trang nguồn
-                  </a>
-                </div>
-              </div>
-
-              <article
-                className="reader-body"
-                dangerouslySetInnerHTML={{
-                  __html: activePost.content ||
-                    "<p>Nội dung bài viết chưa được cào sạch hoặc bị trống.</p>",
-                }}
-              />
-            </div>
-          )
-          : (
-            <div className="reader-placeholder">
-              <div className="reader-placeholder-icon">📖</div>
-              <h3>Chọn một bài viết để đọc</h3>
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "var(--text-secondary)",
-                  maxWidth: "320px",
-                  margin: "0 auto",
-                  lineHeight: "1.6",
-                }}
-              >
-                Nội dung bài viết đã được cào sạch, loại bỏ quảng cáo và sẽ hiển
-                thị trực tiếp tại đây ngay lập tức.
-              </p>
-            </div>
-          )}
-      </section>
+      <Reader
+        activePost={activePost}
+        sourceLabels={sourceLabels}
+        handleBackToFeed={handleBackToFeed}
+      />
     </div>
   );
 }
