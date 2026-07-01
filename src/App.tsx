@@ -55,12 +55,43 @@ export function App() {
         throw new Error(`Could not fetch data.json from ${dataUrl}`);
       }
 
-      // Read Last-Modified header to get actual deploy/sync time
-      const lastMod = response.headers.get("Last-Modified");
-      if (lastMod) {
-        setLastUpdated(new Date(lastMod));
-      } else {
-        setLastUpdated(new Date());
+      // Try to fetch sync metadata to get actual deploy/sync time
+      let metaUrl = "sync_meta.json";
+      if (globalThis.location.hostname.endsWith("github.io")) {
+        const username = globalThis.location.hostname.split(".")[0];
+        const repoName =
+          globalThis.location.pathname.split("/").filter(Boolean)[0];
+        if (username && repoName) {
+          metaUrl =
+            `https://raw.githubusercontent.com/${username}/${repoName}/main/sync_meta.json`;
+        }
+      }
+
+      try {
+        const metaResponse = await fetch(metaUrl);
+        if (metaResponse.ok) {
+          const meta = await metaResponse.json();
+          if (meta && meta.updatedAt) {
+            setLastUpdated(new Date(meta.updatedAt));
+          } else {
+            setLastUpdated(new Date());
+          }
+        } else {
+          const lastMod = response.headers.get("Last-Modified");
+          if (lastMod) {
+            setLastUpdated(new Date(lastMod));
+          } else {
+            setLastUpdated(new Date());
+          }
+        }
+      } catch (metaErr) {
+        console.error("Error fetching sync metadata:", metaErr);
+        const lastMod = response.headers.get("Last-Modified");
+        if (lastMod) {
+          setLastUpdated(new Date(lastMod));
+        } else {
+          setLastUpdated(new Date());
+        }
       }
 
       const data = await response.json();

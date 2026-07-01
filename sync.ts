@@ -25,6 +25,12 @@ async function loadExistingPosts(): Promise<PostWithContent[]> {
 async function savePosts(posts: PostWithContent[]) {
   console.log(`Saving ${posts.length} posts to ${DATA_FILE_PATH}...`);
   await Deno.writeTextFile(DATA_FILE_PATH, JSON.stringify(posts, null, 2));
+
+  // Save sync metadata
+  const meta = {
+    updatedAt: Date.now(),
+  };
+  await Deno.writeTextFile("./sync_meta.json", JSON.stringify(meta, null, 2));
   console.log("Save complete!");
 }
 

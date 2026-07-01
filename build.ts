@@ -42,6 +42,19 @@ async function build() {
     }
   }
 
+  // Copy sync_meta.json to dist/sync_meta.json
+  try {
+    console.log("Copying sync_meta.json to dist/sync_meta.json...");
+    const syncMeta = await Deno.readTextFile("sync_meta.json");
+    await Deno.writeTextFile("dist/sync_meta.json", syncMeta);
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      console.log("No sync_meta.json found at root to copy, skipping.");
+    } else {
+      throw err;
+    }
+  }
+
   // 6. Copy sources.json to dist/sources.json
   try {
     console.log("Copying sources.json to dist/sources.json...");
