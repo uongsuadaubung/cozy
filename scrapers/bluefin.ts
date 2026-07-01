@@ -8,11 +8,13 @@ export class BluefinScraper implements Scraper {
   async fetchPosts(): Promise<Post[]> {
     const url = "https://docs.projectbluefin.io/blog/";
     const response = await fetch(url, {
-      headers: COMMON_HEADERS
+      headers: COMMON_HEADERS,
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Project Bluefin blog: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch Project Bluefin blog: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
@@ -31,18 +33,22 @@ export class BluefinScraper implements Scraper {
       if (!title) return;
 
       const summary = $el.find("p").first().text().trim();
-      
+
       // Chuyển relative URL sang absolute URL
-      const postUrl = href.startsWith("http") ? href : `https://docs.projectbluefin.io${href}`;
+      const postUrl = href.startsWith("http")
+        ? href
+        : `https://docs.projectbluefin.io${href}`;
 
       // Trích xuất ID duy nhất từ slug URL (ví dụ: /blog/introducing-knuckle/ -> bluefin-introducing-knuckle)
       const idMatch = postUrl.match(/\/blog\/([^\/]+)\/?$/);
-      const id = idMatch ? `bluefin-${idMatch[1]}` : `bluefin-${encodeURIComponent(postUrl).slice(-20)}`;
+      const id = idMatch
+        ? `bluefin-${idMatch[1]}`
+        : `bluefin-${encodeURIComponent(postUrl).slice(-20)}`;
 
       // Trích xuất ngày đăng từ attribute datetime của thẻ <time>
       const timeEl = $el.find("time").first();
       const dateAttr = timeEl.attr("datetime");
-      
+
       let baseTime = 0;
       if (dateAttr) {
         baseTime = Date.parse(dateAttr);
@@ -56,13 +62,14 @@ export class BluefinScraper implements Scraper {
       }
 
       // Trích xuất tên tác giả nếu có trong Docusaurus avatar
-      const author = $el.find(".avatar__name").text().trim() || "Project Bluefin";
+      const author = $el.find(".avatar__name").text().trim() ||
+        "Project Bluefin";
 
       // Trừ đi index * 60000 để giữ nguyên thứ tự xuất hiện trên trang chủ
       const createdAt = baseTime - (index * 60 * 1000);
 
       // Tránh trùng lặp bài viết
-      if (!posts.some(p => p.id === id)) {
+      if (!posts.some((p) => p.id === id)) {
         posts.push({
           id,
           title,
@@ -70,7 +77,7 @@ export class BluefinScraper implements Scraper {
           source: this.source,
           author,
           createdAt,
-          summary: summary || undefined
+          summary: summary || undefined,
         });
       }
     });
@@ -80,7 +87,7 @@ export class BluefinScraper implements Scraper {
 
   async fetchContent(url: string): Promise<string> {
     const response = await fetch(url, {
-      headers: COMMON_HEADERS
+      headers: COMMON_HEADERS,
     });
 
     if (!response.ok) {
@@ -101,7 +108,9 @@ export class BluefinScraper implements Scraper {
     }
 
     // Loại bỏ các thành phần header, footer của trang
-    contentEl.find("script, style, iframe, footer, header, .breadcrumbs, .theme-doc-version-badge").remove();
+    contentEl.find(
+      "script, style, iframe, footer, header, .breadcrumbs, .theme-doc-version-badge",
+    ).remove();
 
     return contentEl.html() || "Nội dung bài viết trống.";
   }

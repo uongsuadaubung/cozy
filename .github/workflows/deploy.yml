@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'data.json' # Tránh deploy lại UI chỉ vì data.json thay đổi
-  workflow_dispatch:      # Kích hoạt thủ công từ tab Actions
+      - "data.json" # Tránh deploy lại UI chỉ vì data.json thay đổi
+  workflow_dispatch: # Kích hoạt thủ công từ tab Actions
 
 permissions:
   contents: write # Cần quyền ghi để push lên nhánh gh-pages
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:

@@ -2,5 +2,5 @@
 export const COMMON_HEADERS = {
   "User-Agent": "PostmanRuntime/7.54.0",
   "Accept": "*/*",
-  "Cache-Control": "no-cache"
+  "Cache-Control": "no-cache",
 };

@@ -2,23 +2,23 @@ import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
-export class VnReviewScraper implements Scraper {
-  source = "VnReview" as const;
+export class TechRumScraper implements Scraper {
+  source = "TechRum" as const;
 
   async fetchPosts(): Promise<Post[]> {
     const posts: Post[] = [];
     let overallIndex = 0;
 
     for (let page = 1; page <= 3; page++) {
-      const url = `https://vnreview.vn/ewr-porta/page-${page}`;
       try {
+        const url = `https://techrum.vn/articles/page-${page}`;
         const response = await fetch(url, {
           headers: COMMON_HEADERS,
         });
 
         if (!response.ok) {
           console.warn(
-            `[VnReview] Failed to fetch page ${page}: Status ${response.status}`,
+            `[TechRum] Failed to fetch page ${page}: Status ${response.status}`,
           );
           continue;
         }
@@ -26,9 +26,11 @@ export class VnReviewScraper implements Scraper {
         const html = await response.text();
         const $ = cheerio.load(html);
 
-        $(".porta-article-item.articles-main").each((_, element) => {
+        const items = $(".block.porta-masonry .porta-article-item");
+
+        items.each((_, element) => {
           const $el = $(element);
-          const titleLink = $el.find(".block-header a").first();
+          const titleLink = $el.find("h2.block-header a").first();
           const href = titleLink.attr("href");
 
           if (!href) return;
@@ -36,37 +38,39 @@ export class VnReviewScraper implements Scraper {
           const title = titleLink.text().trim();
           if (!title) return;
 
-          // Normalize relative URL to absolute URL
           const postUrl = href.startsWith("http")
             ? href
-            : `https://vnreview.vn${href}`;
+            : `https://techrum.vn${href}`;
 
-          // Extract unique ID from url (XenForo pattern matching last digit id)
-          const idMatch = postUrl.match(/\.(\d+)\/?$/);
+          // Extract ID from url like /threads/...899488/
+          const idMatch = postUrl.match(/\/threads\/[^.]+\.(\d+)\/?$/);
           const id = idMatch
-            ? `vnreview-${idMatch[1]}`
-            : `vnreview-${encodeURIComponent(postUrl).slice(-20)}`;
+            ? `techrum-${idMatch[1]}`
+            : `techrum-${encodeURIComponent(postUrl).slice(-20)}`;
 
           // Extract author
-          const author = $el.find(".author-block").first().text().trim() ||
-            "VnReview";
+          const author =
+            $el.find(".message-attribution-main a.u-concealed").first().text()
+              .trim() || "TechRum";
 
-          // Extract date
+          // Extract created time
           const timeEl = $el.find("time.u-dt").first();
           const dataTime = timeEl.attr("data-time");
-          let baseTime = 0;
+          let baseTime = Date.now();
+
           if (dataTime) {
             baseTime = parseInt(dataTime, 10) * 1000;
           } else {
             const datetimeAttr = timeEl.attr("datetime");
-            baseTime = datetimeAttr ? Date.parse(datetimeAttr) : Date.now();
+            if (datetimeAttr) {
+              const parsed = Date.parse(datetimeAttr);
+              if (!isNaN(parsed)) {
+                baseTime = parsed;
+              }
+            }
           }
 
-          if (isNaN(baseTime) || !baseTime) {
-            baseTime = Date.now();
-          }
-
-          // Subtract overallIndex * 1000 to keep relative order intact and stable
+          // Maintain list ordering by subtracting a tiny index offset
           const createdAt = baseTime - (overallIndex * 1000);
           overallIndex++;
 
@@ -80,7 +84,7 @@ export class VnReviewScraper implements Scraper {
           });
         });
       } catch (err) {
-        console.error(`[VnReview] Error scraping page ${page}:`, err);
+        console.error(`[TechRum] Error scraping page ${page}:`, err);
       }
     }
 
@@ -99,15 +103,14 @@ export class VnReviewScraper implements Scraper {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // main content of xenforo first post is in .bbWrapper
-    const contentEl = $(".bbWrapper").first();
+    const contentEl = $(".message-body .bbWrapper").first();
 
     if (!contentEl.length) {
       return "Không tìm thấy nội dung bài viết.";
     }
 
-    // Remove unwanted elements
-    contentEl.find("script, style, iframe, .ad-wrapper, .adsbygoogle").remove();
+    // Clean up advertisements and scripting
+    contentEl.find("script, style, iframe, ins").remove();
 
     return contentEl.html() || "Nội dung bài viết trống.";
   }

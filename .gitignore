@@ -14,3 +14,5 @@ thumbs.db
 # Build output
 dist/
 
+# Scratch scripts
+scratch/

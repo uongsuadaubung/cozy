@@ -10,7 +10,9 @@ export class WindowsLatestScraper implements Scraper {
     const response = await fetch(url, { headers: COMMON_HEADERS });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Windows Latest homepage: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch Windows Latest homepage: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
@@ -27,16 +29,19 @@ export class WindowsLatestScraper implements Scraper {
       if (!href || !title) return;
 
       // Chỉ lấy các URL thuộc trang Windows Latest và là bài viết (có dạng /2026/...)
-      if (posts.some(p => p.url === href)) return;
+      if (posts.some((p) => p.url === href)) return;
       if (!href.startsWith("https://www.windowslatest.com/20")) return;
 
-      const author = $el.find(".td-post-author-name a").first().text().trim() || "Windows Latest";
-      
+      const author = $el.find(".td-post-author-name a").first().text().trim() ||
+        "Windows Latest";
+
       const timeEl = $el.find("time").first();
-      const dateText = timeEl.attr("datetime") || timeEl.text().trim() || $el.find(".td-post-date").text().trim();
+      const dateText = timeEl.attr("datetime") || timeEl.text().trim() ||
+        $el.find(".td-post-date").text().trim();
       const createdAt = dateText ? Date.parse(dateText) : Date.now();
 
-      const summary = $el.find(".td-excerpt, .entry-summary").first().text().trim();
+      const summary = $el.find(".td-excerpt, .entry-summary").first().text()
+        .trim();
 
       // Trích xuất slug URL làm ID
       let slug = "";
@@ -54,7 +59,7 @@ export class WindowsLatestScraper implements Scraper {
         source: this.source,
         author,
         createdAt,
-        summary: summary.slice(0, 200) + (summary.length > 200 ? "..." : "")
+        summary: summary.slice(0, 200) + (summary.length > 200 ? "..." : ""),
       });
     });
 
@@ -65,15 +70,19 @@ export class WindowsLatestScraper implements Scraper {
     const response = await fetch(url, { headers: COMMON_HEADERS });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Windows Latest article: Status ${response.status}`);
+      throw new Error(
+        `Failed to fetch Windows Latest article: Status ${response.status}`,
+      );
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
     const contentEl = $(".td-post-content").first();
-    
+
     // Loại bỏ các tag thừa trong nội dung bài viết
-    contentEl.find("script, style, iframe, .wp-block-embed, .td-post-source-tags, .adsbygoogle").remove();
+    contentEl.find(
+      "script, style, iframe, .wp-block-embed, .td-post-source-tags, .adsbygoogle",
+    ).remove();
     const cleanHtml = contentEl.html() || "";
 
     return cleanHtml;

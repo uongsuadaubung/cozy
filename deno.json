@@ -15,5 +15,10 @@
     "dev": "deno run --allow-net --allow-read serve.ts",
     "sync": "deno run --allow-net --allow-read --allow-write sync.ts",
     "build": "deno run --allow-run --allow-read --allow-write build.ts"
+  },
+  "lint": {
+    "exclude": [
+      "scratch/"
+    ]
   }
 }
