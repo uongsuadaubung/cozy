@@ -7,17 +7,6 @@
   --text-secondary: #a1a196;
   --accent-color: #d4af37; /* Cozy Gold */
   --accent-hover: #bfa030;
-  --hn-color: #ff6600; /* HackerNews Orange */
-  --genk-color: #1a73e8; /* GenK Blue */
-  --bluefin-color: #00bcd4; /* Bluefin Cyan */
-  --system76-color: #f58220; /* System76 Orange */
-  --windowslatest-color: #0078d4; /* Windows Blue */
-  --omglinux-color: #ff6f3c; /* Linux Orange */
-  --windowscentral-color: #107c10; /* Xbox Green */
-  --tinhte-color: #0062fe; /* Tinh te Blue */
-  --vnreview-color: #cc4611; /* VnReview Red-Orange */
-  --techz-color: #ef4136; /* TechZ Red */
-  --techrum-color: #00b0ff; /* TechRum Cyan-Blue */
 
   --sidebar-width: 260px;
   --feed-width: 400px;
@@ -369,54 +358,7 @@ body {
   border-radius: 4px;
 }
 
-.source-tag.hackernews {
-  background-color: rgba(255, 102, 0, 0.15);
-  color: var(--hn-color);
-}
-.source-tag.omgubuntu {
-  background-color: rgba(221, 72, 20, 0.15);
-  color: var(--system76-color);
-}
-.source-tag.genk {
-  background-color: rgba(26, 115, 232, 0.15);
-  color: var(--genk-color);
-}
-.source-tag.bluefin {
-  background-color: rgba(0, 188, 212, 0.15);
-  color: var(--bluefin-color);
-}
-.source-tag.system76 {
-  background-color: rgba(245, 130, 32, 0.15);
-  color: var(--system76-color);
-}
-.source-tag.windowslatest {
-  background-color: rgba(0, 120, 212, 0.15);
-  color: var(--windowslatest-color);
-}
-.source-tag.omglinux {
-  background-color: rgba(255, 111, 60, 0.15);
-  color: var(--omglinux-color);
-}
-.source-tag.windowscentral {
-  background-color: rgba(16, 124, 16, 0.15);
-  color: var(--windowscentral-color);
-}
-.source-tag.tinhte {
-  background-color: rgba(0, 98, 254, 0.15);
-  color: var(--tinhte-color);
-}
-.source-tag.vnreview {
-  background-color: rgba(204, 70, 17, 0.15);
-  color: var(--vnreview-color);
-}
-.source-tag.techz {
-  background-color: rgba(239, 65, 54, 0.15);
-  color: var(--techz-color);
-}
-.source-tag.techrum {
-  background-color: rgba(0, 176, 255, 0.15);
-  color: var(--techrum-color);
-}
+/* Source tag specific colors are set dynamically via inline styles */
 
 .post-title {
   margin: 0 0 8px 0;

@@ -1,27 +1,11 @@
 import { useState } from "preact/hooks";
 
-// Configuration of sources
-export const SOURCE_LABELS: Record<string, string> = {
-  "All": "Tất cả tin",
-  "HackerNews": "Hacker News",
-  "OmgUbuntu": "OMG! Ubuntu!",
-  "GenK": "GenK.vn",
-  "Bluefin": "Project Bluefin",
-  "System76": "System76 Blog",
-  "WindowsLatest": "Windows Latest",
-  "OmgLinux": "OMG! Linux!",
-  "WindowsCentral": "Windows Central",
-  "Tinhte": "Tinh tế",
-  "VnReview": "VnReview",
-  "TechZ": "TechZ.vn",
-  "TechRum": "TechRum.vn",
-};
-
 interface SidebarProps {
   activeSource: string;
   unreadCounts: Record<string, number>;
   visibleSources: string[];
   hiddenSources: string[];
+  sourceLabels: Record<string, string>;
   lastUpdatedText: string;
   onSelectSource: (source: string) => void;
   onAddSource: (source: string) => void;
@@ -33,6 +17,7 @@ export function Sidebar({
   unreadCounts,
   visibleSources,
   hiddenSources,
+  sourceLabels,
   lastUpdatedText,
   onSelectSource,
   onAddSource,
@@ -53,15 +38,15 @@ export function Sidebar({
         onClick={() => onSelectSource("All")}
       >
         <span className="logo-icon">☕</span>
-        <span>Cozy Feed</span>
+        <span className="logo-text">Cozy Feed</span>
       </a>
 
       <div className="menu-section" style={{ position: "relative" }}>
         <div className="menu-title">
           <span>Nguồn tin</span>
-          <button
+          <button 
             type="button"
-            className="btn-add-source-icon"
+            className="btn-add-source-icon" 
             onClick={() => setShowDropdown(!showDropdown)}
             title="Thêm nguồn tin"
           >
@@ -71,24 +56,20 @@ export function Sidebar({
 
         {showDropdown && (
           <div className="add-source-dropdown">
-            {hiddenSources.length === 0
-              ? (
-                <div className="dropdown-empty-message">
-                  Đã thêm tất cả nguồn tin
-                </div>
-              )
-              : (
-                hiddenSources.map((source) => (
-                  <button
-                    type="button"
-                    key={source}
-                    className="dropdown-item"
-                    onClick={() => handleSelectAddSource(source)}
-                  >
-                    <span>{SOURCE_LABELS[source]}</span>
-                  </button>
-                ))
-              )}
+            {hiddenSources.length === 0 ? (
+              <div className="dropdown-empty-message">Đã thêm tất cả nguồn tin</div>
+            ) : (
+              hiddenSources.map(source => (
+                <button 
+                  type="button"
+                  key={source} 
+                  className="dropdown-item" 
+                  onClick={() => handleSelectAddSource(source)}
+                >
+                  <span>{sourceLabels[source] || source}</span>
+                </button>
+              ))
+            )}
           </div>
         )}
 
@@ -96,36 +77,34 @@ export function Sidebar({
           {/* 1. RENDER ALL */}
           <li className="menu-item">
             <div className="menu-item-container">
-              <a
-                onClick={() => onSelectSource("All")}
-                className={`menu-link ${
-                  activeSource === "All" ? "active" : ""
-                }`}
+              <a 
+                onClick={() => onSelectSource("All")} 
+                className={`menu-link ${activeSource === "All" ? "active" : ""}`}
               >
-                <span className="menu-link-text">{SOURCE_LABELS["All"]}</span>
+                <span className="menu-link-text">{sourceLabels["All"] || "Tất cả tin"}</span>
                 <span className="badge">{unreadCounts["All"] || 0}</span>
               </a>
             </div>
           </li>
-
+          
           {/* 2. RENDER VISIBLE SOURCES */}
-          {visibleSources.map((source) => {
-            const label = SOURCE_LABELS[source];
+          {visibleSources.map(source => {
+            const label = sourceLabels[source] || source;
             const count = unreadCounts[source] || 0;
             const isActive = activeSource === source;
             return (
               <li key={source} className="menu-item">
                 <div className="menu-item-container visible-source-item">
-                  <a
-                    onClick={() => onSelectSource(source)}
+                  <a 
+                    onClick={() => onSelectSource(source)} 
                     className={`menu-link ${isActive ? "active" : ""}`}
                   >
                     <span className="menu-link-text">{label}</span>
                     <span className="badge">{count}</span>
                   </a>
-                  <button
+                  <button 
                     type="button"
-                    className="btn-remove-source"
+                    className="btn-remove-source" 
                     onClick={(e) => onRemoveSource(e, source)}
                     title="Ẩn nguồn tin này"
                   >
@@ -139,14 +118,9 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <div
-          style={{
-            fontSize: "11px",
-            color: "var(--text-secondary)",
-            textAlign: "center",
-          }}
-        >
-          Cập nhật: <strong>{lastUpdatedText}</strong>
+        <div className="sync-status">
+          <div className="sync-indicator"></div>
+          <span className="sync-text">{lastUpdatedText}</span>
         </div>
       </div>
     </aside>

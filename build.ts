@@ -42,6 +42,19 @@ async function build() {
     }
   }
 
+  // 6. Copy sources.json to dist/sources.json
+  try {
+    console.log("Copying sources.json to dist/sources.json...");
+    const sourcesJson = await Deno.readTextFile("sources.json");
+    await Deno.writeTextFile("dist/sources.json", sourcesJson);
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      console.log("No sources.json found at root to copy, skipping.");
+    } else {
+      throw err;
+    }
+  }
+
   console.log("\n✅ Deno Native Build completed successfully!");
   console.log("- dist/index.html (Copied)");
   console.log("- dist/client.js  (Bundled)");
