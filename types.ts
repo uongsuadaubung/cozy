@@ -1,4 +1,4 @@
-export type NewsSource = "HackerNews" | "OmgUbuntu" | "GenK" | "Bluefin" | "System76" | "WindowsLatest" | "OmgLinux" | "WindowsCentral" | "Tinhte";
+export type NewsSource = "HackerNews" | "OmgUbuntu" | "GenK" | "Bluefin" | "System76" | "WindowsLatest" | "OmgLinux" | "WindowsCentral" | "Tinhte" | "VnReview";
 
 export interface Post {
   id: string;          // ID duy nhất (ví dụ: "hn-12345" hoặc "omg-67890")
