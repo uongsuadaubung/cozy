@@ -122,6 +122,44 @@ export class VnExpressScraper implements Scraper {
       ".title-detail, .description, .box-tinlienquan, .banner-ads, .insert-link-news",
     ).remove();
 
+    // Rewrite images for lazy loading, responsiveness and hotlink protection
+    contentEl.find("img").each((_, img) => {
+      const $img = $(img);
+      const dataSrc = $img.attr("data-src") || $img.attr("src");
+      if (dataSrc) {
+        $img.attr("src", dataSrc);
+      }
+      $img.removeAttr("srcset");
+      $img.removeAttr("class");
+      $img.removeAttr("style");
+      $img.attr("referrerpolicy", "no-referrer");
+      $img.css({
+        "max-width": "100%",
+        "height": "auto",
+        "display": "block",
+        "margin": "10px auto",
+        "border-radius": "4px",
+      });
+    });
+
+    // Remove source and replace picture/wrapper tags to avoid responsive/positioning issues
+    contentEl.find("picture source").remove();
+    contentEl.find("picture").each((_, pic) => {
+      const $pic = $(pic);
+      const img = $pic.find("img");
+      if (img.length) {
+        $pic.replaceWith(img);
+      }
+    });
+
+    contentEl.find(".fig-picture").each((_, div) => {
+      const $div = $(div);
+      const img = $div.find("img");
+      if (img.length) {
+        $div.replaceWith(img);
+      }
+    });
+
     let contentHtml = "";
     contentEl.each((_, el) => {
       contentHtml += $(el).html() || "";
