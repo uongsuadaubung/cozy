@@ -216,6 +216,22 @@ export function App() {
     };
   }, []);
 
+  // Scroll reader pane to top when active post changes
+  useEffect(() => {
+    if (activePostId) {
+      const scrollReaderToTop = () => {
+        const readerPane = document.getElementById("reader-pane");
+        if (readerPane) {
+          readerPane.scrollTop = 0;
+        }
+      };
+      // Run immediately (since DOM might have updated) and via timeout to guarantee
+      scrollReaderToTop();
+      const id = setTimeout(scrollReaderToTop, 50);
+      return () => clearTimeout(id);
+    }
+  }, [activePostId]);
+
   // Compute text for relative updated time
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdated) return "Đang kiểm tra...";
@@ -287,12 +303,6 @@ export function App() {
     const url = new URL(globalThis.location.href);
     url.searchParams.set("post", postId);
     globalThis.history.pushState({}, "", url.toString());
-
-    // Scroll reader to top
-    const readerPane = document.getElementById("reader-pane");
-    if (readerPane) {
-      readerPane.scrollTop = 0;
-    }
   };
 
   const handleBackToFeed = () => {
