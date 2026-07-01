@@ -5,13 +5,11 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'dist/data.json' # Tránh deploy lại UI chỉ vì data.json thay đổi
+      - 'data.json' # Tránh deploy lại UI chỉ vì data.json thay đổi
   workflow_dispatch:      # Kích hoạt thủ công từ tab Actions
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write # Cần quyền ghi để push lên nhánh gh-pages
 
 concurrency:
   group: 'pages'
@@ -19,9 +17,6 @@ concurrency:
 
 jobs:
   deploy-ui:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -36,14 +31,8 @@ jobs:
       - name: Run Static HTML Build
         run: deno task build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: './dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          folder: dist
+          branch: gh-pages

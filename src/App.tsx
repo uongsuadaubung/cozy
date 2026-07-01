@@ -26,8 +26,17 @@ export function App() {
   // Fetch posts data
   const loadFeedData = async () => {
     try {
-      const response = await fetch("data.json");
-      if (!response.ok) throw new Error("Could not fetch data.json");
+      let dataUrl = "data.json";
+      if (window.location.hostname.endsWith("github.io")) {
+        const username = window.location.hostname.split(".")[0];
+        const repoName = window.location.pathname.split("/").filter(Boolean)[0];
+        if (username && repoName) {
+          dataUrl = `https://raw.githubusercontent.com/${username}/${repoName}/main/data.json`;
+        }
+      }
+      
+      const response = await fetch(dataUrl);
+      if (!response.ok) throw new Error(`Could not fetch data.json from ${dataUrl}`);
       
       // Read Last-Modified header to get actual deploy/sync time
       const lastMod = response.headers.get("Last-Modified");
