@@ -201,13 +201,24 @@ export class DantriScraper implements Scraper {
       "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor",
     ).remove();
 
-    // Rewrite lazy loaded images (data-src -> src)
-    contentEl.find("img[data-src]").each((_, img) => {
+    // Rewrite images for lazy loading, responsiveness and hotlink protection
+    contentEl.find("img").each((_, img) => {
       const $img = $(img);
-      const dataSrc = $img.attr("data-src");
+      const dataSrc = $img.attr("data-src") || $img.attr("src");
       if (dataSrc) {
         $img.attr("src", dataSrc);
       }
+      $img.removeAttr("srcset");
+      $img.removeAttr("class");
+      $img.removeAttr("style");
+      $img.attr("referrerpolicy", "no-referrer");
+      $img.css({
+        "max-width": "100%",
+        "height": "auto",
+        "display": "block",
+        "margin": "10px auto",
+        "border-radius": "4px",
+      });
     });
 
     return contentEl.html() || "Nội dung bài viết trống.";
