@@ -10,3 +10,7 @@ thumbs.db
 
 # Task logs
 .system_generated/
+
+# Build output
+dist/
+

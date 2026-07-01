@@ -24,6 +24,24 @@ async function build() {
   const html = await Deno.readTextFile("src/index.html");
   await Deno.writeTextFile("dist/index.html", html);
 
+  // 4. Copy src/style.css to dist/client.css
+  console.log("Copying src/style.css to dist/client.css...");
+  const css = await Deno.readTextFile("src/style.css");
+  await Deno.writeTextFile("dist/client.css", css);
+
+  // 5. Copy data.json to dist/data.json
+  try {
+    console.log("Copying data.json to dist/data.json...");
+    const dataJson = await Deno.readTextFile("data.json");
+    await Deno.writeTextFile("dist/data.json", dataJson);
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      console.log("No data.json found at root to copy, skipping.");
+    } else {
+      throw err;
+    }
+  }
+
   console.log("\n✅ Deno Native Build completed successfully!");
   console.log("- dist/index.html (Copied)");
   console.log("- dist/client.js  (Bundled)");

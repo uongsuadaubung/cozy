@@ -29,7 +29,10 @@ Deno.serve({ port: PORT }, async (req) => {
     pathname = "/index.html";
   }
   
-  const filepath = "./dist" + pathname;
+  let filepath = "./dist" + pathname;
+  if (pathname === "/data.json") {
+    filepath = "./data.json";
+  }
   
   try {
     const file = await Deno.open(filepath, { read: true });

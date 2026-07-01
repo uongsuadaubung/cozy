@@ -5,7 +5,7 @@ interface PostWithContent extends Post {
   content?: string;
 }
 
-const DATA_FILE_PATH = "./dist/data.json";
+const DATA_FILE_PATH = "./data.json";
 const MAX_POSTS_PER_SOURCE = 50;
 
 async function loadExistingPosts(): Promise<PostWithContent[]> {
