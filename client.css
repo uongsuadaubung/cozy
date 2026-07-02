@@ -379,10 +379,12 @@ body {
 }
 
 .reader-content {
-  max-width: 720px;
+  max-width: 880px;
   margin: 0 auto;
   width: 100%;
   display: none;
+  padding: 0 80px;
+  box-sizing: border-box;
 }
 
 .reader-header {
@@ -950,4 +952,73 @@ body {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
 }
+
+/* Reader navigation buttons (Left/Right margins) */
+.reader-pane {
+  position: relative;
+}
+
+.reader-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(28, 28, 24, 0.6);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  opacity: 0.15;
+  user-select: none;
+}
+
+.reader-nav-btn:hover {
+  opacity: 1;
+  background-color: var(--surface-hover);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.reader-nav-btn.nav-prev {
+  /* Aligns with the left gutter of reader content on desktop */
+  left: calc(var(--sidebar-width) + var(--feed-width) + 16px);
+}
+
+.reader-nav-btn.nav-next {
+  /* Aligns with the right gutter of reader content on desktop */
+  right: 16px;
+}
+
+@media (max-width: 1200px) {
+  .reader-nav-btn.nav-prev {
+    left: calc(var(--sidebar-width) + 16px);
+  }
+}
+
+@media (max-width: 992px) {
+  .reader-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    opacity: 0.35;
+  }
+  .reader-nav-btn.nav-prev {
+    left: 8px;
+  }
+  .reader-nav-btn.nav-next {
+    right: 8px;
+  }
+  .reader-content {
+    padding: 0 52px;
+  }
+}
+
 
