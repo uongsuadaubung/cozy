@@ -3,7 +3,8 @@
   "specifiers": {
     "npm:cheerio@^1.0.0-rc.12": "1.2.0",
     "npm:hono@^4.4.7": "4.12.27",
-    "npm:preact@^10.22.0": "10.29.3"
+    "npm:preact@^10.22.0": "10.29.3",
+    "npm:zod@^4.4.3": "4.4.3"
   },
   "npm": {
     "boolbase@1.0.0": {
@@ -151,13 +152,17 @@
     },
     "whatwg-mimetype@4.0.0": {
       "integrity": "sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg=="
+    },
+    "zod@4.4.3": {
+      "integrity": "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="
     }
   },
   "workspace": {
     "dependencies": [
       "npm:cheerio@^1.0.0-rc.12",
       "npm:hono@^4.4.7",
-      "npm:preact@^10.22.0"
+      "npm:preact@^10.22.0",
+      "npm:zod@^4.4.3"
     ]
   }
 }

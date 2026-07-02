@@ -5,7 +5,9 @@ async function hashUrl(url: string): Promise<string> {
   const msgUint8 = new TextEncoder().encode(url);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join(
+    "",
+  );
   return hashHex;
 }
 
@@ -14,7 +16,8 @@ async function downloadImage(url: string, destPath: string): Promise<boolean> {
   try {
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": new URL(url).origin,
       },
     });
@@ -29,7 +32,10 @@ async function downloadImage(url: string, destPath: string): Promise<boolean> {
 }
 
 // Process images inside HTML content by downloading them and rewriting src
-export async function processPostImages(content: string, _postId: string): Promise<string> {
+export async function processPostImages(
+  content: string,
+  _postId: string,
+): Promise<string> {
   if (!content) return content;
 
   try {
@@ -42,7 +48,8 @@ export async function processPostImages(content: string, _postId: string): Promi
     const imgElements = $("img").toArray();
     for (const el of imgElements) {
       const $img = $(el);
-      const src = $img.attr("src") || $img.attr("k-data-src") || $img.attr("data-src");
+      const src = $img.attr("src") || $img.attr("k-data-src") ||
+        $img.attr("data-src");
       if (!src) continue;
 
       if (!src.startsWith("http")) continue;

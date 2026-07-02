@@ -1,7 +1,14 @@
 import * as cheerio from "cheerio";
+import { z } from "zod";
 import { Post, Scraper } from "../types.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 import { processPostImages } from "./image_downloader.ts";
+
+const DantriApiResponseSchema = z.object({
+  data: z.string(),
+  lastDateArticle: z.string(),
+  offset: z.number(),
+});
 
 export class DantriScraper implements Scraper {
   source = "Dantri" as const;
@@ -18,7 +25,9 @@ export class DantriScraper implements Scraper {
       });
 
       if (!response.ok) {
-        console.warn(`[Dantri] Failed to fetch main page: Status ${response.status}`);
+        console.warn(
+          `[Dantri] Failed to fetch main page: Status ${response.status}`,
+        );
         return [];
       }
 
@@ -33,9 +42,23 @@ export class DantriScraper implements Scraper {
 
         if (!href) return;
 
+        const postUrl = href.startsWith("http")
+          ? href
+          : `https://dantri.com.vn${href}`;
+
+        // Skip video-only pages (e.g. dt360 or video paths)
+        if (
+          postUrl.includes("/dt360/") || postUrl.includes("/video/") ||
+          postUrl.includes("/video-page")
+        ) {
+          return;
+        }
+
         // Skip non-standard articles (videos, live coverage, photo essays)
         const label = titleLink.attr("data-label");
-        if (label && ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)) {
+        if (
+          label && ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)
+        ) {
           return;
         }
 
@@ -43,16 +66,15 @@ export class DantriScraper implements Scraper {
         if (!title) return;
 
         const summary = $el.find(".article-excerpt").text().trim();
-        const postUrl = href.startsWith("http")
-          ? href
-          : `https://dantri.com.vn${href}`;
 
         // Trích xuất ID bài viết từ URL hoặc attribute data-id
         const dataId = $el.attr("data-id");
         const idMatch = postUrl.match(/-(\d+)\.htm$/);
         const id = dataId
           ? `dantri-${dataId}`
-          : (idMatch ? `dantri-${idMatch[1]}` : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
+          : (idMatch
+            ? `dantri-${idMatch[1]}`
+            : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
 
         // Phân tích ngày giờ từ data-id (định dạng YYYYMMDDHHmmssSSS)
         let createdAt = Date.now();
@@ -65,7 +87,11 @@ export class DantriScraper implements Scraper {
           const min = parseInt(timePart.substring(10, 12), 10);
           const sec = parseInt(timePart.substring(12, 14), 10);
 
-          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}+07:00`;
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${
+            String(day).padStart(2, "0")
+          }T${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}:${
+            String(sec).padStart(2, "0")
+          }+07:00`;
           const parsed = Date.parse(dateStr);
           if (!isNaN(parsed)) {
             createdAt = parsed;
@@ -96,18 +122,22 @@ export class DantriScraper implements Scraper {
         let offset = parseInt(offsetStr, 10);
 
         for (let page = 2; page <= 3; page++) {
-          const apiUrl = `https://dantri.com.vn/api/newest/get-more-newest-article/${lastDate}/${offset}/${offset}.htm`;
+          const apiUrl =
+            `https://dantri.com.vn/api/newest/get-more-newest-article/${lastDate}/${offset}/${offset}.htm`;
           try {
             const apiResponse = await fetch(apiUrl, {
               headers: COMMON_HEADERS,
             });
 
             if (!apiResponse.ok) {
-              console.warn(`[Dantri] Failed to fetch page ${page} from API: Status ${apiResponse.status}`);
+              console.warn(
+                `[Dantri] Failed to fetch page ${page} from API: Status ${apiResponse.status}`,
+              );
               break;
             }
 
-            const json = await apiResponse.json();
+            const rawJson = await apiResponse.json();
+            const json = DantriApiResponseSchema.parse(rawJson);
             const apiHtml = json.data;
 
             // Cập nhật tham số cho trang kế tiếp
@@ -119,30 +149,46 @@ export class DantriScraper implements Scraper {
             const $api = cheerio.load(`<div>${apiHtml}</div>`);
             $api("article.article-item").each((_, element) => {
               const $el = $api(element);
-              const titleLink = $el.find(".article-title a, h3 a, h2 a").first();
+              const titleLink = $el.find(".article-title a, h3 a, h2 a")
+                .first();
               const href = titleLink.attr("href");
 
               if (!href) return;
 
-              // Skip non-standard articles (videos, live coverage, photo essays)
-              const label = titleLink.attr("data-label");
-              if (label && ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)) {
-                return;
-              }
-
-              const title = titleLink.text().trim() || titleLink.attr("title") || "";
-              if (!title) return;
-
-              const summary = $el.find(".article-excerpt").text().trim();
               const postUrl = href.startsWith("http")
                 ? href
                 : `https://dantri.com.vn${href}`;
+
+              // Skip video-only pages (e.g. dt360 or video paths)
+              if (
+                postUrl.includes("/dt360/") || postUrl.includes("/video/") ||
+                postUrl.includes("/video-page")
+              ) {
+                return;
+              }
+
+              // Skip non-standard articles (videos, live coverage, photo essays)
+              const label = titleLink.attr("data-label");
+              if (
+                label &&
+                ["Video", "Trực tiếp", "Ảnh", "Infographic"].includes(label)
+              ) {
+                return;
+              }
+
+              const title = titleLink.text().trim() ||
+                titleLink.attr("title") || "";
+              if (!title) return;
+
+              const summary = $el.find(".article-excerpt").text().trim();
 
               const dataId = $el.attr("data-id");
               const idMatch = postUrl.match(/-(\d+)\.htm$/);
               const id = dataId
                 ? `dantri-${dataId}`
-                : (idMatch ? `dantri-${idMatch[1]}` : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
+                : (idMatch
+                  ? `dantri-${idMatch[1]}`
+                  : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
 
               let createdAt = Date.now();
               const timePart = dataId || (idMatch ? idMatch[1] : "");
@@ -154,7 +200,13 @@ export class DantriScraper implements Scraper {
                 const min = parseInt(timePart.substring(10, 12), 10);
                 const sec = parseInt(timePart.substring(12, 14), 10);
 
-                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}+07:00`;
+                const dateStr = `${year}-${
+                  String(month + 1).padStart(2, "0")
+                }-${String(day).padStart(2, "0")}T${
+                  String(hour).padStart(2, "0")
+                }:${String(min).padStart(2, "0")}:${
+                  String(sec).padStart(2, "0")
+                }+07:00`;
                 const parsed = Date.parse(dateStr);
                 if (!isNaN(parsed)) {
                   createdAt = parsed;
@@ -175,7 +227,10 @@ export class DantriScraper implements Scraper {
               });
             });
           } catch (err) {
-            console.error(`[Dantri] Error scraping page ${page} from API:`, err);
+            console.error(
+              `[Dantri] Error scraping page ${page} from API:`,
+              err,
+            );
             break;
           }
         }
@@ -193,7 +248,9 @@ export class DantriScraper implements Scraper {
     });
 
     if (!response.ok) {
-      throw new Error(`Không thể tải bài viết Dân trí: Mã lỗi ${response.status}`);
+      throw new Error(
+        `Không thể tải bài viết Dân trí: Mã lỗi ${response.status}`,
+      );
     }
 
     const html = await response.text();
@@ -202,7 +259,9 @@ export class DantriScraper implements Scraper {
     // DanTri content is inside #desktop-in-article
     let contentEl = $("#desktop-in-article");
     if (!contentEl.length) {
-      contentEl = $(".singular-content, .detail-content, .article-content, .e-magazine__body, .e-magazine").first();
+      contentEl = $(
+        ".singular-content, .detail-content, .article-content, .e-magazine__body, .e-magazine",
+      ).first();
     }
 
     if (!contentEl.length) {

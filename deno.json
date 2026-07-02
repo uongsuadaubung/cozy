@@ -4,7 +4,8 @@
     "cheerio": "npm:cheerio@^1.0.0-rc.12",
     "preact": "npm:preact@^10.22.0",
     "preact/hooks": "npm:preact@^10.22.0/hooks",
-    "preact/jsx-runtime": "npm:preact@^10.22.0/jsx-runtime"
+    "preact/jsx-runtime": "npm:preact@^10.22.0/jsx-runtime",
+    "zod": "npm:zod@^4.4.3"
   },
   "compilerOptions": {
     "jsx": "react-jsx",

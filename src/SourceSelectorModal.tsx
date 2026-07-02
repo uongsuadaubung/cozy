@@ -56,30 +56,49 @@ export function SourceSelectorModal({
 
   const filteredDomestic = domesticList.filter((source) => {
     const label = sourceLabels[source] || source;
-    return label.toLowerCase().includes(searchQuery.toLowerCase()) || source.toLowerCase().includes(searchQuery.toLowerCase());
+    return label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      source.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const filteredForeign = foreignList.filter((source) => {
     const label = sourceLabels[source] || source;
-    return label.toLowerCase().includes(searchQuery.toLowerCase()) || source.toLowerCase().includes(searchQuery.toLowerCase());
+    return label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      source.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const noSourcesFound = filteredDomestic.length === 0 && filteredForeign.length === 0;
+  const noSourcesFound = filteredDomestic.length === 0 &&
+    filteredForeign.length === 0;
 
   return (
     <div className="modal-overlay active" onClick={onClose}>
-      <div className="modal-content source-selector-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} title="Đóng modal">
+      <div
+        className="modal-content source-selector-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          title="Đóng modal"
+        >
           &times;
         </button>
         <h2 className="modal-title">Chọn nguồn tin quan tâm</h2>
-        
+
         <div className="source-modal-header">
-          <button type="button" className="btn-link-action" onClick={handleSelectAll}>
+          <button
+            type="button"
+            className="btn-link-action"
+            onClick={handleSelectAll}
+          >
             Chọn tất cả
           </button>
           <span className="divider">|</span>
-          <button type="button" className="btn-link-action" onClick={handleDeselectAll}>
+          <button
+            type="button"
+            className="btn-link-action"
+            onClick={handleDeselectAll}
+          >
             Bỏ chọn tất cả
           </button>
         </div>
@@ -90,71 +109,89 @@ export function SourceSelectorModal({
             className="source-modal-search"
             placeholder="🔍 Tìm kiếm nguồn tin..."
             value={searchQuery}
-            onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+            onInput={(e) =>
+              setSearchQuery((e.target as HTMLInputElement).value)}
           />
         </div>
 
         <div className="source-modal-body">
-          {noSourcesFound ? (
-            <div className="dropdown-empty-message" style={{ padding: "40px 0" }}>
-              Không tìm thấy nguồn tin nào khớp với từ khóa.
-            </div>
-          ) : (
-            <div className="source-groups-container">
-              {/* Trong nước */}
-              {filteredDomestic.length > 0 && (
-                <div className="source-group-section">
-                  <h3 className="source-group-title">🇻🇳 Trong nước</h3>
-                  <div className="source-group-list">
-                    {filteredDomestic.map((source) => {
-                      const label = sourceLabels[source] || source;
-                      const isSelected = selected.includes(source);
+          {noSourcesFound
+            ? (
+              <div
+                className="dropdown-empty-message"
+                style={{ padding: "40px 0" }}
+              >
+                Không tìm thấy nguồn tin nào khớp với từ khóa.
+              </div>
+            )
+            : (
+              <div className="source-groups-container">
+                {/* Trong nước */}
+                {filteredDomestic.length > 0 && (
+                  <div className="source-group-section">
+                    <h3 className="source-group-title">🇻🇳 Trong nước</h3>
+                    <div className="source-group-list">
+                      {filteredDomestic.map((source) => {
+                        const label = sourceLabels[source] || source;
+                        const isSelected = selected.includes(source);
 
-                      return (
-                        <div
-                          key={source}
-                          className={`source-modal-item ${isSelected ? "selected" : ""}`}
-                          onClick={() => handleToggleSource(source)}
-                        >
-                          <span className="source-modal-item-label">{label}</span>
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div
+                            key={source}
+                            className={`source-modal-item ${
+                              isSelected ? "selected" : ""
+                            }`}
+                            onClick={() => handleToggleSource(source)}
+                          >
+                            <span className="source-modal-item-label">
+                              {label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Nước ngoài */}
-              {filteredForeign.length > 0 && (
-                <div className="source-group-section">
-                  <h3 className="source-group-title">🌐 Nước ngoài</h3>
-                  <div className="source-group-list">
-                    {filteredForeign.map((source) => {
-                      const label = sourceLabels[source] || source;
-                      const isSelected = selected.includes(source);
+                {/* Nước ngoài */}
+                {filteredForeign.length > 0 && (
+                  <div className="source-group-section">
+                    <h3 className="source-group-title">🌐 Nước ngoài</h3>
+                    <div className="source-group-list">
+                      {filteredForeign.map((source) => {
+                        const label = sourceLabels[source] || source;
+                        const isSelected = selected.includes(source);
 
-                      return (
-                        <div
-                          key={source}
-                          className={`source-modal-item ${isSelected ? "selected" : ""}`}
-                          onClick={() => handleToggleSource(source)}
-                        >
-                          <span className="source-modal-item-label">{label}</span>
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div
+                            key={source}
+                            className={`source-modal-item ${
+                              isSelected ? "selected" : ""
+                            }`}
+                            onClick={() => handleToggleSource(source)}
+                          >
+                            <span className="source-modal-item-label">
+                              {label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
         </div>
 
         <div className="source-modal-footer">
           <button type="button" className="btn-action" onClick={onClose}>
             Hủy
           </button>
-          <button type="button" className="btn-action btn-action-primary" onClick={handleConfirm}>
+          <button
+            type="button"
+            className="btn-action btn-action-primary"
+            onClick={handleConfirm}
+          >
             Xác nhận
           </button>
         </div>
