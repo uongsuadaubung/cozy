@@ -29,7 +29,9 @@ export class VnExpressScraper implements Scraper {
         const $ = cheerio.load(html);
 
         const container = $("div.width_common.list-news-subfolder");
-        const articles = container.find("article.item-news.item-news-common.thumb-left");
+        const articles = container.find(
+          "article.item-news.item-news-common.thumb-left",
+        );
 
         articles.each((_, element) => {
           const $el = $(element);
@@ -38,7 +40,8 @@ export class VnExpressScraper implements Scraper {
 
           if (!href) return;
 
-          const title = titleLink.text().trim() || titleLink.attr("title") || "";
+          const title = titleLink.text().trim() || titleLink.attr("title") ||
+            "";
           if (!title) return;
 
           const summary = $el.find("p.description").text().trim();
@@ -99,7 +102,9 @@ export class VnExpressScraper implements Scraper {
     });
 
     if (!response.ok) {
-      throw new Error(`Không thể tải bài viết VnExpress: Mã lỗi ${response.status}`);
+      throw new Error(
+        `Không thể tải bài viết VnExpress: Mã lỗi ${response.status}`,
+      );
     }
 
     const html = await response.text();
@@ -116,7 +121,7 @@ export class VnExpressScraper implements Scraper {
     contentEl.find(
       "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor",
     ).remove();
-    
+
     // Remove the title/description elements if nested inside .fck_detail to prevent double rendering in UI
     contentEl.find(
       ".title-detail, .description, .box-tinlienquan, .banner-ads, .insert-link-news",

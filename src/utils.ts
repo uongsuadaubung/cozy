@@ -36,10 +36,10 @@ export function adjustImageUrls(content: string) {
 
   if (globalThis.location.hostname.endsWith("github.io")) {
     const username = globalThis.location.hostname.split(".")[0];
-    const repoName =
-      globalThis.location.pathname.split("/").filter(Boolean)[0];
+    const repoName = globalThis.location.pathname.split("/").filter(Boolean)[0];
     if (username && repoName) {
-      const baseUrl = `https://raw.githubusercontent.com/${username}/${repoName}/images/`;
+      const baseUrl =
+        `https://raw.githubusercontent.com/${username}/${repoName}/images/`;
       return content.replace(/src="images\//g, `src="${baseUrl}`);
     }
   }

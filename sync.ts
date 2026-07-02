@@ -14,7 +14,9 @@ async function cleanupOrphanedImages(posts: PostWithContent[]) {
     for (const post of posts) {
       if (post.content) {
         // Find any references like "images/abcdef123.jpg" or similar
-        const matches = post.content.match(/images\/[a-f0-9]+\.(jpg|jpeg|png|webp|gif)/g);
+        const matches = post.content.match(
+          /images\/[a-f0-9]+\.(jpg|jpeg|png|webp|gif)/g,
+        );
         if (matches) {
           for (const match of matches) {
             const filename = match.split("/")[1];
@@ -39,7 +41,9 @@ async function cleanupOrphanedImages(posts: PostWithContent[]) {
           }
         }
       }
-      console.log(`Total images checked: ${filesCount}, Deleted: ${deletedCount}`);
+      console.log(
+        `Total images checked: ${filesCount}, Deleted: ${deletedCount}`,
+      );
     } catch (readErr) {
       if (readErr instanceof Deno.errors.NotFound) {
         console.log("No images folder found, skipping cleanup.");

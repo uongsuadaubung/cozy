@@ -209,7 +209,10 @@ export function App() {
 
   const handleConfirmSources = (selectedSources: string[]) => {
     setVisibleSources(selectedSources);
-    localStorage.setItem("cozy_visible_sources", JSON.stringify(selectedSources));
+    localStorage.setItem(
+      "cozy_visible_sources",
+      JSON.stringify(selectedSources),
+    );
     setShowSourcesModal(false);
     if (activeSource !== "All" && !selectedSources.includes(activeSource)) {
       setActiveSource("All");
@@ -239,7 +242,8 @@ export function App() {
         lastUpdatedText={lastUpdatedText}
         onSelectSource={handleSelectSource}
         onRemoveSource={handleRemoveSource}
-        onOpenManageSources={() => setShowSourcesModal(true)}
+        onOpenManageSources={() =>
+          setShowSourcesModal(true)}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -248,10 +252,17 @@ export function App() {
       <main className="feed-container">
         <header className="feed-header">
           <div className="feed-header-top">
-            <button className="menu-toggle-btn" onClick={() => setSidebarOpen(true)} title="Mở danh mục">
+            <button
+              type="button"
+              className="menu-toggle-btn"
+              onClick={() => setSidebarOpen(true)}
+              title="Mở danh mục"
+            >
               ☰
             </button>
-            <h1 className="feed-title">{sourceLabels[activeSource] || activeSource}</h1>
+            <h1 className="feed-title">
+              {sourceLabels[activeSource] || activeSource}
+            </h1>
           </div>
           <div className="feed-controls">
             <span className="feed-subtitle">
