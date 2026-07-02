@@ -31,6 +31,10 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Fetch existing images
+        run: |
+          git clone --branch images https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git images || mkdir images
+
       - name: Run Scraper Sync
         run: |
           ARGS=""
