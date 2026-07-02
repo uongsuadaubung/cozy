@@ -28,10 +28,20 @@ async function build() {
   console.log("Copying src/style.css to dist/client.css...");
   const css = await Deno.readTextFile("src/style.css");
   await Deno.writeTextFile("dist/client.css", css);
+
+  // 5. Copy src/og-image.jpg to dist/og-image.jpg
+  console.log("Copying src/og-image.jpg to dist/og-image.jpg...");
+  try {
+    await Deno.copyFile("src/og-image.jpg", "dist/og-image.jpg");
+  } catch (err) {
+    console.warn("⚠️ Failed to copy og-image.jpg:", err);
+  }
+
   console.log("\n✅ Deno Native Build completed successfully!");
   console.log("- dist/index.html (Copied)");
   console.log("- dist/client.js  (Bundled)");
   console.log("- dist/client.css (Compiled from style.css)");
+  console.log("- dist/og-image.jpg (Copied)");
   console.log("=========================================");
 }
 
