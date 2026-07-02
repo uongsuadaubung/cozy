@@ -38,6 +38,14 @@ export function App() {
   });
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [showSourcesModal, setShowSourcesModal] = useState<boolean>(false);
+  const [filterMode, setFilterMode] = useState<"newest" | "unread-first">(() => {
+    return (localStorage.getItem("cozy_filter_mode") as "newest" | "unread-first") || "newest";
+  });
+
+  const handleFilterModeChange = (mode: "newest" | "unread-first") => {
+    setFilterMode(mode);
+    localStorage.setItem("cozy_filter_mode", mode);
+  };
 
   // Read URL parameters on startup
   useEffect(() => {
@@ -165,15 +173,29 @@ export function App() {
     return counts;
   }, [posts, readPosts, visibleSources, sourceLabels]);
 
-  // Derive filtered posts list
+  // Derive filtered and sorted posts list
   const filteredPosts = useMemo(() => {
-    return posts.filter((post) => {
+    const list = posts.filter((post) => {
       if (activeSource === "All") {
         return visibleSources.includes(post.source);
       }
       return post.source === activeSource;
     });
-  }, [posts, activeSource, visibleSources]);
+
+    if (filterMode === "unread-first") {
+      return [...list].sort((a, b) => {
+        // Giữ tin đang đọc ở vị trí cũ (coi như chưa đọc) để tránh bị nhảy danh sách khi click
+        const isReadA = readPosts.has(a.id) && a.id !== activePostId;
+        const isReadB = readPosts.has(b.id) && b.id !== activePostId;
+        if (isReadA !== isReadB) {
+          return isReadA ? 1 : -1; // Tin chưa đọc (false) xếp trước
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
+
+    return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [posts, activeSource, visibleSources, filterMode, readPosts, activePostId]);
 
   // Derive active post object
   const activePost = useMemo(() => {
@@ -258,6 +280,16 @@ export function App() {
                 ? "Đang tải bài viết..."
                 : `Hiển thị ${filteredPosts.length} bài viết`}
             </span>
+            <div className="filter-dropdown-container">
+              <select
+                className="filter-select"
+                value={filterMode}
+                onChange={(e) => handleFilterModeChange(e.currentTarget.value as any)}
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="unread-first">Chưa đọc</option>
+              </select>
+            </div>
           </div>
         </header>
 

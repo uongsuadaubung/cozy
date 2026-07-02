@@ -924,3 +924,30 @@ body {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
 }
+
+.filter-dropdown-container {
+  display: flex;
+  align-items: center;
+}
+
+.filter-select {
+  background-color: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  border-color: var(--accent-color);
+}
+
+.filter-select:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+}
+
