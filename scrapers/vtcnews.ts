@@ -1,7 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
 import { COMMON_HEADERS } from "./constants.ts";
-import { processPostImages } from "./image_downloader.ts";
 
 export class VTCNewsScraper implements Scraper {
   source = "VTCNews" as const;
@@ -145,7 +144,6 @@ export class VTCNewsScraper implements Scraper {
     }
     contentHtml += contentEl.html() || "";
 
-    // Tải ảnh về lưu trữ cục bộ (local cache)
-    return await processPostImages(contentHtml, url);
+    return contentHtml.trim() || "Nội dung bài viết trống.";
   }
 }
