@@ -5,7 +5,6 @@ interface SidebarProps {
   sourceLabels: Record<string, string>;
   lastUpdatedText: string;
   onSelectSource: (source: string) => void;
-  onRemoveSource: (e: Event, source: string) => void;
   onOpenManageSources: () => void;
   isOpen?: boolean;
   onClose?: () => void;
@@ -18,7 +17,6 @@ export function Sidebar({
   sourceLabels,
   lastUpdatedText,
   onSelectSource,
-  onRemoveSource,
   onOpenManageSources,
   isOpen,
   onClose,
@@ -95,7 +93,7 @@ export function Sidebar({
               const isActive = activeSource === source;
               return (
                 <li key={source} className="menu-item">
-                  <div className="menu-item-container visible-source-item">
+                  <div className="menu-item-container">
                     <a
                       onClick={() => handleSelectSourceWithClose(source)}
                       className={`menu-link ${isActive ? "active" : ""}`}
@@ -103,14 +101,6 @@ export function Sidebar({
                       <span className="menu-link-text">{label}</span>
                       <span className="badge">{count}</span>
                     </a>
-                    <button
-                      type="button"
-                      className="btn-remove-source"
-                      onClick={(e) => onRemoveSource(e, source)}
-                      title="Ẩn nguồn tin này"
-                    >
-                      &times;
-                    </button>
                   </div>
                 </li>
               );

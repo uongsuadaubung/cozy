@@ -220,17 +220,6 @@ export function App() {
     }
   };
 
-  const handleRemoveSource = (e: Event, source: string) => {
-    e.stopPropagation();
-    const nextSet = visibleSources.filter((s) => s !== source);
-    setVisibleSources(nextSet);
-    localStorage.setItem("cozy_visible_sources", JSON.stringify(nextSet));
-    if (activeSource === source) {
-      setActiveSource("All");
-      globalThis.location.hash = "All";
-    }
-  };
-
   return (
     <div className={`app-container ${activePost ? "has-active-post" : ""}`}>
       {/* 1. SIDEBAR */}
@@ -241,7 +230,6 @@ export function App() {
         sourceLabels={sourceLabels}
         lastUpdatedText={lastUpdatedText}
         onSelectSource={handleSelectSource}
-        onRemoveSource={handleRemoveSource}
         onOpenManageSources={() =>
           setShowSourcesModal(true)}
         isOpen={sidebarOpen}
