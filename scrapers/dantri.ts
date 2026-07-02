@@ -6,7 +6,7 @@ import { processPostImages } from "./image_downloader.ts";
 
 const DantriApiResponseSchema = z.object({
   data: z.string(),
-  lastDateArticle: z.string(),
+  lastDateArticle: z.union([z.string(), z.number()]),
   offset: z.number(),
 });
 
@@ -141,7 +141,7 @@ export class DantriScraper implements Scraper {
             const apiHtml = json.data;
 
             // Cập nhật tham số cho trang kế tiếp
-            lastDate = json.lastDateArticle;
+            lastDate = String(json.lastDateArticle);
             offset = json.offset;
 
             if (!apiHtml) break;
