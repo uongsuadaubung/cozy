@@ -16,3 +16,6 @@ dist/
 
 # Scratch scripts
 scratch/
+
+# Local images cache
+images/

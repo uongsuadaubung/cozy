@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
 import { COMMON_HEADERS } from "./constants.ts";
+import { processPostImages } from "./image_downloader.ts";
 
 export class DantriScraper implements Scraper {
   source = "Dantri" as const;
@@ -233,6 +234,7 @@ export class DantriScraper implements Scraper {
       });
     });
 
-    return contentEl.html() || "Nội dung bài viết trống.";
+    const cleanHtml = contentEl.html() || "Nội dung bài viết trống.";
+    return await processPostImages(cleanHtml, url);
   }
 }

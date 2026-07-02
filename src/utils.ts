@@ -29,3 +29,19 @@ export const FOREIGN_SOURCES = [
   "OmgLinux",
   "WindowsCentral",
 ];
+
+// Helper to rewrite image URLs at runtime when running on GitHub Pages
+export function adjustImageUrls(content: string) {
+  if (!content) return content;
+
+  if (globalThis.location.hostname.endsWith("github.io")) {
+    const username = globalThis.location.hostname.split(".")[0];
+    const repoName =
+      globalThis.location.pathname.split("/").filter(Boolean)[0];
+    if (username && repoName) {
+      const baseUrl = `https://raw.githubusercontent.com/${username}/${repoName}/images/`;
+      return content.replace(/src="images\//g, `src="${baseUrl}`);
+    }
+  }
+  return content;
+}

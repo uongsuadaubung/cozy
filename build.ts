@@ -28,51 +28,6 @@ async function build() {
   console.log("Copying src/style.css to dist/client.css...");
   const css = await Deno.readTextFile("src/style.css");
   await Deno.writeTextFile("dist/client.css", css);
-  const isGitHubActions = Deno.env.get("GITHUB_ACTIONS") === "true";
-
-  if (isGitHubActions) {
-    console.log("Skipping copying JSON files to dist/ because build is running in GitHub Actions.");
-  } else {
-    // 5. Copy data.json to dist/data.json
-    try {
-      console.log("Copying data.json to dist/data.json...");
-      const dataJson = await Deno.readTextFile("data.json");
-      await Deno.writeTextFile("dist/data.json", dataJson);
-    } catch (err) {
-      if (err instanceof Deno.errors.NotFound) {
-        console.log("No data.json found at root to copy, skipping.");
-      } else {
-        throw err;
-      }
-    }
-
-    // Copy sync_meta.json to dist/sync_meta.json
-    try {
-      console.log("Copying sync_meta.json to dist/sync_meta.json...");
-      const syncMeta = await Deno.readTextFile("sync_meta.json");
-      await Deno.writeTextFile("dist/sync_meta.json", syncMeta);
-    } catch (err) {
-      if (err instanceof Deno.errors.NotFound) {
-        console.log("No sync_meta.json found at root to copy, skipping.");
-      } else {
-        throw err;
-      }
-    }
-
-    // 6. Copy sources.json to dist/sources.json
-    try {
-      console.log("Copying sources.json to dist/sources.json...");
-      const sourcesJson = await Deno.readTextFile("sources.json");
-      await Deno.writeTextFile("dist/sources.json", sourcesJson);
-    } catch (err) {
-      if (err instanceof Deno.errors.NotFound) {
-        console.log("No sources.json found at root to copy, skipping.");
-      } else {
-        throw err;
-      }
-    }
-  }
-
   console.log("\n✅ Deno Native Build completed successfully!");
   console.log("- dist/index.html (Copied)");
   console.log("- dist/client.js  (Bundled)");
