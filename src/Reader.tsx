@@ -5,18 +5,42 @@ interface ReaderProps {
   activePost: Post | null;
   sourceLabels: Record<string, string>;
   handleBackToFeed: () => void;
+  onPrevPost?: () => void;
+  onNextPost?: () => void;
 }
 
 export function Reader({
   activePost,
   sourceLabels,
   handleBackToFeed,
+  onPrevPost,
+  onNextPost,
 }: ReaderProps) {
   return (
     <section className="reader-pane" id="reader-pane">
       {activePost
         ? (
           <div className="reader-content" style={{ display: "block" }}>
+            {onPrevPost && (
+              <button
+                type="button"
+                className="reader-nav-btn nav-prev"
+                onClick={onPrevPost}
+                title="Bài viết mới hơn"
+              >
+                ‹
+              </button>
+            )}
+            {onNextPost && (
+              <button
+                type="button"
+                className="reader-nav-btn nav-next"
+                onClick={onNextPost}
+                title="Bài viết cũ hơn"
+              >
+                ›
+              </button>
+            )}
             <div className="reader-header">
               <button
                 type="button"
