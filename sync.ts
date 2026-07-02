@@ -5,6 +5,53 @@ interface PostWithContent extends Post {
   content?: string;
 }
 
+// Cleanup orphaned images that are no longer referenced in any active post content
+async function cleanupOrphanedImages(posts: PostWithContent[]) {
+  console.log("\n🧹 Cleaning up orphaned images...");
+  try {
+    const activeImages = new Set<string>();
+
+    for (const post of posts) {
+      if (post.content) {
+        // Find any references like "images/abcdef123.jpg" or similar
+        const matches = post.content.match(/images\/[a-f0-9]+\.(jpg|jpeg|png|webp|gif)/g);
+        if (matches) {
+          for (const match of matches) {
+            const filename = match.split("/")[1];
+            activeImages.add(filename);
+          }
+        }
+      }
+    }
+
+    console.log(`Active referenced images: ${activeImages.size}`);
+
+    try {
+      let filesCount = 0;
+      let deletedCount = 0;
+
+      for await (const entry of Deno.readDir("./images")) {
+        if (entry.isFile) {
+          filesCount++;
+          if (!activeImages.has(entry.name)) {
+            await Deno.remove(`./images/${entry.name}`);
+            deletedCount++;
+          }
+        }
+      }
+      console.log(`Total images checked: ${filesCount}, Deleted: ${deletedCount}`);
+    } catch (readErr) {
+      if (readErr instanceof Deno.errors.NotFound) {
+        console.log("No images folder found, skipping cleanup.");
+      } else {
+        throw readErr;
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error during image cleanup:", err);
+  }
+}
+
 const DATA_FILE_PATH = "./data.json";
 const MAX_POSTS_PER_SOURCE = 50;
 
@@ -176,7 +223,10 @@ async function runSync() {
   // Sort final array by createdAt desc
   limitedPosts.sort((a, b) => b.createdAt - a.createdAt);
 
-  // 4. Save back to data.json
+  // 4. Cleanup orphaned images
+  await cleanupOrphanedImages(limitedPosts);
+
+  // 5. Save back to data.json
   await savePosts(limitedPosts);
 
   console.log("=========================================");

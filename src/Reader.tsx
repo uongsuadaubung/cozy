@@ -1,5 +1,5 @@
 import { Post } from "./hooks/useFeedData.ts";
-import { getSourceColor } from "./utils.ts";
+import { getSourceColor, adjustImageUrls } from "./utils.ts";
 
 interface ReaderProps {
   activePost: Post | null;
@@ -54,9 +54,10 @@ export function Reader({
           <article
             className="reader-body"
             dangerouslySetInnerHTML={{
-              __html:
+              __html: adjustImageUrls(
                 activePost.content ||
-                "<p>Nội dung bài viết chưa được cào sạch hoặc bị trống.</p>",
+                  "<p>Nội dung bài viết chưa được cào sạch hoặc bị trống.</p>"
+              ),
             }}
           />
         </div>

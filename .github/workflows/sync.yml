@@ -3,7 +3,17 @@ name: Cozy Feed Crawl Data
 on:
   schedule:
     - cron: "0 */3 * * *" # Chạy cào tin mỗi 3 tiếng
-  workflow_dispatch: # Kích hoạt thủ công từ tab Actions
+  workflow_dispatch: # Kích hoạt thủ công từ tab Actions với tùy chọn
+    inputs:
+      source:
+        description: "Tên nguồn tin muốn cào riêng (để trống để cào tất cả, ví dụ: dantri)"
+        required: false
+        default: ""
+      force:
+        description: "Bắt buộc cào lại từ đầu (-f)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -22,7 +32,33 @@ jobs:
           deno-version: v2.x
 
       - name: Run Scraper Sync
-        run: deno task sync
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.source }}" ]; then
+            ARGS="$ARGS ${{ github.event.inputs.source }}"
+          fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            ARGS="$ARGS -f"
+          fi
+          echo "Running sync with args: $ARGS"
+          deno task sync $ARGS
+
+      - name: Deploy Images to images branch
+        run: |
+          if [ -d "images" ] && [ "$(ls -A images)" ]; then
+            echo "Deploying images to images branch..."
+            cd images
+            git init
+            git checkout -b images
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            git add .
+            git commit -m "chore: auto-sync active images"
+            git push origin images --force
+          else
+            echo "No images found. Skipping images branch deploy."
+          fi
 
       - name: Commit and Push Data Changes
         run: |
