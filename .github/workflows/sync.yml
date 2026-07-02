@@ -52,14 +52,20 @@ jobs:
           if [ -d "images" ] && [ "$(ls -A images)" ]; then
             echo "Deploying images to images branch..."
             cd images
-            git init
-            git checkout -b images
+            if [ ! -d ".git" ]; then
+              git init
+              git checkout -b images
+              git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            fi
             git config --global user.name "github-actions[bot]"
             git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
             git add .
-            git commit -m "chore: auto-sync active images"
-            git push origin images --force
+            if git diff --cached --quiet; then
+              echo "No image changes to commit."
+            else
+              git commit -m "chore: auto-sync active images"
+              git push origin images --force
+            fi
           else
             echo "No images found. Skipping images branch deploy."
           fi
