@@ -9,7 +9,6 @@ import { WindowsCentralScraper } from "./windowscentral.ts";
 import { TinhteScraper } from "./tinhte.ts";
 import { VnReviewScraper } from "./vnreview.ts";
 import { TechZScraper } from "./techz.ts";
-import { TechRumScraper } from "./techrum.ts";
 import { VnExpressScraper } from "./vnexpress.ts";
 import { DantriScraper } from "./dantri.ts";
 import { Scraper } from "../types.ts";
@@ -27,7 +26,6 @@ export const scrapers: Scraper[] = [
   new TinhteScraper(),
   new VnReviewScraper(),
   new TechZScraper(),
-  new TechRumScraper(),
   new VnExpressScraper(),
   new DantriScraper(),
 ];

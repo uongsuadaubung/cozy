@@ -2,149 +2,50 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { Sidebar } from "./Sidebar.tsx";
 import { Welcome } from "./Welcome.tsx";
 import { Reader } from "./Reader.tsx";
-
-interface Post {
-  id: string;
-  title: string;
-  url: string;
-  source: string;
-  author: string;
-  createdAt: number;
-  summary?: string;
-  content?: string;
-}
-
-// Helper to hash source name to a unique aesthetic HSL color for badge styling
-export function getSourceColor(source: string) {
-  let hash = 0;
-  for (let i = 0; i < source.length; i++) {
-    hash = source.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return {
-    color: `hsl(${hue}, 85%, 65%)`,
-    backgroundColor: `hsla(${hue}, 85%, 65%, 0.15)`
-  };
-}
+import { SourceSelectorModal } from "./SourceSelectorModal.tsx";
+import { Post, useFeedData } from "./hooks/useFeedData.ts";
+import { getSourceColor } from "./utils.ts";
 
 export function App() {
+  const {
+    posts,
+    loading,
+    lastUpdated,
+    sourceLabels,
+    loadFeedData,
+    loadSources,
+    setLoading,
+  } = useFeedData();
+
   // State variables
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
+  const [readPosts, setReadPosts] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("cozy_read_posts");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch (_) {
+      return new Set();
+    }
+  });
   const [activeSource, setActiveSource] = useState<string>("All");
   const [activePostId, setActivePostId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [visibleSources, setVisibleSources] = useState<string[]>([]);
-  const [sourceLabels, setSourceLabels] = useState<Record<string, string>>({ "All": "Tất cả tin" });
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-
-  // Fetch posts data
-  const loadFeedData = async () => {
+  const [visibleSources, setVisibleSources] = useState<string[]>(() => {
     try {
-      let dataUrl = "data.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          dataUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/data.json`;
-        }
-      }
-
-      const response = await fetch(dataUrl);
-      if (!response.ok) {
-        throw new Error(`Could not fetch data.json from ${dataUrl}`);
-      }
-
-      // Try to fetch sync metadata to get actual deploy/sync time
-      let metaUrl = "sync_meta.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          metaUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/sync_meta.json`;
-        }
-      }
-
-      try {
-        const metaResponse = await fetch(metaUrl);
-        if (metaResponse.ok) {
-          const meta = await metaResponse.json();
-          if (meta && meta.updatedAt) {
-            setLastUpdated(new Date(meta.updatedAt));
-          } else {
-            setLastUpdated(new Date());
-          }
-        } else {
-          const lastMod = response.headers.get("Last-Modified");
-          if (lastMod) {
-            setLastUpdated(new Date(lastMod));
-          } else {
-            setLastUpdated(new Date());
-          }
-        }
-      } catch (metaErr) {
-        console.error("Error fetching sync metadata:", metaErr);
-        const lastMod = response.headers.get("Last-Modified");
-        if (lastMod) {
-          setLastUpdated(new Date(lastMod));
-        } else {
-          setLastUpdated(new Date());
-        }
-      }
-
-      const data = await response.json();
-      setPosts(data);
-      return data;
-    } catch (err) {
-      console.error("Error loading Cozy feeds:", err);
+      const saved = localStorage.getItem("cozy_visible_sources");
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
       return [];
     }
-  };
-
-  // Fetch sources.json
-  const loadSources = async () => {
-    try {
-      let sourcesUrl = "sources.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          sourcesUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/sources.json`;
-        }
-      }
-
-      const response = await fetch(sourcesUrl);
-      if (response.ok) {
-        const labels = await response.json();
-        setSourceLabels(labels);
-      }
-    } catch (err) {
-      console.error("Error loading sources.json:", err);
-    }
-  };
+  });
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [showSourcesModal, setShowSourcesModal] = useState<boolean>(false);
 
   // Read URL parameters on startup
   useEffect(() => {
     // Load dynamic sources labels
     loadSources();
 
-    // Load visible sources from localStorage or default to an empty list
-    const savedSources = localStorage.getItem("cozy_visible_sources");
-    if (savedSources) {
-      try {
-        setVisibleSources(JSON.parse(savedSources));
-      } catch (_) {
-        setVisibleSources([]);
-      }
-    } else {
-      setVisibleSources([]);
+    // Set initial visible sources default in localStorage if empty
+    if (!localStorage.getItem("cozy_visible_sources")) {
       localStorage.setItem("cozy_visible_sources", JSON.stringify([]));
     }
 
@@ -170,15 +71,7 @@ export function App() {
 
     // Initialize read status & migration
     const initReadStatusAndData = async () => {
-      let readSet = new Set<string>();
-      try {
-        const saved = localStorage.getItem("cozy_read_posts");
-        if (saved) {
-          readSet = new Set(JSON.parse(saved));
-        }
-      } catch (err) {
-        console.warn("Could not load read status:", err);
-      }
+      let readSet = new Set(readPosts);
 
       const fetchedPosts = await loadFeedData();
 
@@ -314,10 +207,14 @@ export function App() {
     globalThis.history.pushState({}, "", url.toString());
   };
 
-  const handleAddSource = (source: string) => {
-    const nextSet = [...visibleSources, source];
-    setVisibleSources(nextSet);
-    localStorage.setItem("cozy_visible_sources", JSON.stringify(nextSet));
+  const handleConfirmSources = (selectedSources: string[]) => {
+    setVisibleSources(selectedSources);
+    localStorage.setItem("cozy_visible_sources", JSON.stringify(selectedSources));
+    setShowSourcesModal(false);
+    if (activeSource !== "All" && !selectedSources.includes(activeSource)) {
+      setActiveSource("All");
+      globalThis.location.hash = "All";
+    }
   };
 
   const handleRemoveSource = (e: Event, source: string) => {
@@ -331,12 +228,6 @@ export function App() {
     }
   };
 
-  const hiddenSources = useMemo(() => {
-    return Object.keys(sourceLabels).filter(
-      (source) => source !== "All" && !visibleSources.includes(source),
-    );
-  }, [visibleSources, sourceLabels]);
-
   return (
     <div className={`app-container ${activePost ? "has-active-post" : ""}`}>
       {/* 1. SIDEBAR */}
@@ -344,12 +235,11 @@ export function App() {
         activeSource={activeSource}
         unreadCounts={unreadCounts}
         visibleSources={visibleSources}
-        hiddenSources={hiddenSources}
         sourceLabels={sourceLabels}
         lastUpdatedText={lastUpdatedText}
         onSelectSource={handleSelectSource}
-        onAddSource={handleAddSource}
         onRemoveSource={handleRemoveSource}
+        onOpenManageSources={() => setShowSourcesModal(true)}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -376,9 +266,7 @@ export function App() {
           {!loading && visibleSources.length === 0
             ? (
               <Welcome
-                sourceLabels={sourceLabels}
-                visibleSources={visibleSources}
-                onAddSource={handleAddSource}
+                onOpenManageSources={() => setShowSourcesModal(true)}
               />
             )
             : !loading && filteredPosts.length === 0
@@ -445,6 +333,16 @@ export function App() {
         activePost={activePost}
         sourceLabels={sourceLabels}
         handleBackToFeed={handleBackToFeed}
+      />
+
+      {/* 4. SOURCE SELECTOR MODAL */}
+      <SourceSelectorModal
+        isOpen={showSourcesModal}
+        onClose={() => setShowSourcesModal(false)}
+        onConfirm={handleConfirmSources}
+        allSources={Object.keys(sourceLabels).filter((s) => s !== "All")}
+        initialSelectedSources={visibleSources}
+        sourceLabels={sourceLabels}
       />
     </div>
   );
