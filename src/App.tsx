@@ -202,6 +202,23 @@ export function App() {
     return posts.find((p) => p.id === activePostId) || null;
   }, [posts, activePostId]);
 
+  // Derive navigation handlers for the Reader
+  const readerNavigation = useMemo(() => {
+    if (!activePostId) return { onPrev: undefined, onNext: undefined };
+    const currentIndex = filteredPosts.findIndex((p) => p.id === activePostId);
+    if (currentIndex === -1) return { onPrev: undefined, onNext: undefined };
+
+    const onPrev = currentIndex > 0
+      ? () => handleSelectPost(filteredPosts[currentIndex - 1].id)
+      : undefined;
+
+    const onNext = currentIndex < filteredPosts.length - 1
+      ? () => handleSelectPost(filteredPosts[currentIndex + 1].id)
+      : undefined;
+
+    return { onPrev, onNext };
+  }, [filteredPosts, activePostId]);
+
   // Handlers
   const handleSelectSource = (source: string) => {
     setActiveSource(source);
@@ -284,7 +301,7 @@ export function App() {
               <select
                 className="filter-select"
                 value={filterMode}
-                onChange={(e) => handleFilterModeChange(e.currentTarget.value as any)}
+                onChange={(e) => handleFilterModeChange(e.currentTarget.value as "newest" | "unread-first")}
               >
                 <option value="newest">Mới nhất</option>
                 <option value="unread-first">Chưa đọc</option>
@@ -364,6 +381,8 @@ export function App() {
         activePost={activePost}
         sourceLabels={sourceLabels}
         handleBackToFeed={handleBackToFeed}
+        onPrevPost={readerNavigation.onPrev}
+        onNextPost={readerNavigation.onNext}
       />
 
       {/* 4. SOURCE SELECTOR MODAL */}
