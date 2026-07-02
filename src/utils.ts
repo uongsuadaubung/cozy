@@ -18,6 +18,7 @@ export const DOMESTIC_SOURCES = [
   "TechZ",
   "VnExpress",
   "Dantri",
+  "VTCNews",
 ];
 
 export const FOREIGN_SOURCES = [
