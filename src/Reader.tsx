@@ -1,15 +1,5 @@
-import { getSourceColor } from "./App.tsx";
-
-interface Post {
-  id: string;
-  title: string;
-  url: string;
-  source: string;
-  author: string;
-  createdAt: number;
-  summary?: string;
-  content?: string;
-}
+import { Post } from "./hooks/useFeedData.ts";
+import { getSourceColor } from "./utils.ts";
 
 interface ReaderProps {
   activePost: Post | null;

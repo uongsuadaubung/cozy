@@ -10,7 +10,6 @@ export type NewsSource =
   | "Tinhte"
   | "VnReview"
   | "TechZ"
-  | "TechRum"
   | "VnExpress"
   | "Dantri";
 

@@ -4,12 +4,11 @@ interface SidebarProps {
   activeSource: string;
   unreadCounts: Record<string, number>;
   visibleSources: string[];
-  hiddenSources: string[];
   sourceLabels: Record<string, string>;
   lastUpdatedText: string;
   onSelectSource: (source: string) => void;
-  onAddSource: (source: string) => void;
   onRemoveSource: (e: Event, source: string) => void;
+  onOpenManageSources: () => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -18,22 +17,14 @@ export function Sidebar({
   activeSource,
   unreadCounts,
   visibleSources,
-  hiddenSources,
   sourceLabels,
   lastUpdatedText,
   onSelectSource,
-  onAddSource,
   onRemoveSource,
+  onOpenManageSources,
   isOpen,
   onClose,
 }: SidebarProps) {
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const handleSelectAddSource = (source: string) => {
-    onAddSource(source);
-    setShowDropdown(false);
-  };
-
   const handleSelectSourceWithClose = (source: string) => {
     onSelectSource(source);
     if (onClose) {
@@ -69,31 +60,12 @@ export function Sidebar({
           <button 
             type="button"
             className="btn-add-source-icon" 
-            onClick={() => setShowDropdown(!showDropdown)}
-            title="Thêm nguồn tin"
+            onClick={onOpenManageSources}
+            title="Quản lý nguồn tin"
           >
             ➕
           </button>
         </div>
-
-        {showDropdown && (
-          <div className="add-source-dropdown">
-            {hiddenSources.length === 0 ? (
-              <div className="dropdown-empty-message">Đã thêm tất cả nguồn tin</div>
-            ) : (
-              hiddenSources.map(source => (
-                <button 
-                  type="button"
-                  key={source} 
-                  className="dropdown-item" 
-                  onClick={() => handleSelectAddSource(source)}
-                >
-                  <span>{sourceLabels[source] || source}</span>
-                </button>
-              ))
-            )}
-          </div>
-        )}
 
         <ul className="menu-list">
           {/* 1. RENDER ALL */}
