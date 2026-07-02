@@ -202,7 +202,7 @@ export class DantriScraper implements Scraper {
     // DanTri content is inside #desktop-in-article
     let contentEl = $("#desktop-in-article");
     if (!contentEl.length) {
-      contentEl = $(".singular-content, .detail-content, .article-content").first();
+      contentEl = $(".singular-content, .detail-content, .article-content, .e-magazine__body, .e-magazine").first();
     }
 
     if (!contentEl.length) {
