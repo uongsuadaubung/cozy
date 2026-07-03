@@ -19,19 +19,22 @@ export function useFeedData() {
     "All": "Tất cả tin",
   });
 
+  const getGitHubRawBaseUrl = () => {
+    let username = "uongsuadaubung";
+    let repoName = "cozy";
+    if (globalThis.location.hostname.endsWith("github.io")) {
+      username = globalThis.location.hostname.split(".")[0];
+      repoName =
+        globalThis.location.pathname.split("/").filter(Boolean)[0] || "cozy";
+    }
+    return `https://raw.githubusercontent.com/${username}/${repoName}`;
+  };
+
   // Fetch posts data
   const loadFeedData = async () => {
     try {
-      let dataUrl = "data.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          dataUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/data/data.json`;
-        }
-      }
+      const baseUrl = getGitHubRawBaseUrl();
+      const dataUrl = `${baseUrl}/data/data.json`;
 
       const response = await fetch(dataUrl);
       if (!response.ok) {
@@ -39,16 +42,7 @@ export function useFeedData() {
       }
 
       // Try to fetch sync metadata to get actual deploy/sync time
-      let metaUrl = "sync_meta.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          metaUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/data/sync_meta.json`;
-        }
-      }
+      const metaUrl = `${baseUrl}/data/sync_meta.json`;
 
       try {
         const metaResponse = await fetch(metaUrl);
@@ -89,16 +83,8 @@ export function useFeedData() {
   // Fetch sources.json
   const loadSources = async () => {
     try {
-      let sourcesUrl = "sources.json";
-      if (globalThis.location.hostname.endsWith("github.io")) {
-        const username = globalThis.location.hostname.split(".")[0];
-        const repoName =
-          globalThis.location.pathname.split("/").filter(Boolean)[0];
-        if (username && repoName) {
-          sourcesUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/sources.json`;
-        }
-      }
+      const baseUrl = getGitHubRawBaseUrl();
+      const sourcesUrl = `${baseUrl}/main/sources.json`;
 
       const response = await fetch(sourcesUrl);
       if (response.ok) {

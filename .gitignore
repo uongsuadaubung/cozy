@@ -19,3 +19,9 @@ scratch/
 
 # Local images cache
 images/
+
+# Local data cache
+data.json
+sync_meta.json
+data_branch/
+

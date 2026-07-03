@@ -31,18 +31,16 @@ export const FOREIGN_SOURCES = [
   "WindowsCentral",
 ];
 
-// Helper to rewrite image URLs at runtime when running on GitHub Pages
+// Helper to rewrite image URLs at runtime to use the remote GitHub images branch
 export function adjustImageUrls(content: string) {
   if (!content) return content;
 
+  let username = "uongsuadaubung";
+  let repoName = "cozy";
   if (globalThis.location.hostname.endsWith("github.io")) {
-    const username = globalThis.location.hostname.split(".")[0];
-    const repoName = globalThis.location.pathname.split("/").filter(Boolean)[0];
-    if (username && repoName) {
-      const baseUrl =
-        `https://raw.githubusercontent.com/${username}/${repoName}/images/`;
-      return content.replace(/src="images\//g, `src="${baseUrl}`);
-    }
+    username = globalThis.location.hostname.split(".")[0];
+    repoName = globalThis.location.pathname.split("/").filter(Boolean)[0] || "cozy";
   }
-  return content;
+  const baseUrl = `https://raw.githubusercontent.com/${username}/${repoName}/images/`;
+  return content.replace(/src="images\//g, `src="${baseUrl}`);
 }

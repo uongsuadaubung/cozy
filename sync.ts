@@ -56,7 +56,8 @@ async function cleanupOrphanedImages(posts: PostWithContent[]) {
   }
 }
 
-const DATA_FILE_PATH = "./data.json";
+let DATA_FILE_PATH = "./data.json";
+let META_FILE_PATH = "./sync_meta.json";
 const MAX_POSTS_PER_SOURCE = 50;
 
 async function loadExistingPosts(): Promise<PostWithContent[]> {
@@ -65,10 +66,10 @@ async function loadExistingPosts(): Promise<PostWithContent[]> {
     return JSON.parse(text) as PostWithContent[];
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) {
-      console.log("No existing data.json found. Starting fresh.");
+      console.log(`No existing ${DATA_FILE_PATH} found. Starting fresh.`);
       return [];
     }
-    console.error("Error reading existing data.json, starting fresh:", err);
+    console.error(`Error reading existing ${DATA_FILE_PATH}, starting fresh:`, err);
     return [];
   }
 }
@@ -81,56 +82,33 @@ async function savePosts(posts: PostWithContent[]) {
   const meta = {
     updatedAt: Date.now(),
   };
-  await Deno.writeTextFile("./sync_meta.json", JSON.stringify(meta, null, 2));
+  await Deno.writeTextFile(META_FILE_PATH, JSON.stringify(meta, null, 2));
   console.log("Save complete!");
 }
 
-// Helper to automatically download data.json and sync_meta.json from remote 'data' branch if missing locally
-async function ensureLocalDataFile() {
+// Helper to determine remote origin URL and GITHUB_TOKEN if available
+async function getGitRemoteUrl(): Promise<string> {
+  let remoteUrl = "";
   try {
-    await Deno.stat(DATA_FILE_PATH);
-    console.log("Local data.json exists.");
+    const command = new Deno.Command("git", {
+      args: ["remote", "get-url", "origin"],
+    });
+    const { success, stdout } = await command.output();
+    if (success) {
+      remoteUrl = new TextDecoder().decode(stdout).trim();
+    }
   } catch (_) {
-    console.log("data.json not found locally. Attempting to fetch from remote 'data' branch...");
-    try {
-      const command = new Deno.Command("git", {
-        args: ["remote", "get-url", "origin"],
-      });
-      const { success, stdout } = await command.output();
-      if (!success) {
-        throw new Error("Failed to get git remote URL.");
-      }
-      const remoteUrl = new TextDecoder().decode(stdout).trim();
-      const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^.]+)/);
-      if (match) {
-        const [_, username, repoName] = match;
-        const dataUrl = `https://raw.githubusercontent.com/${username}/${repoName}/data/data.json`;
-        const metaUrl = `https://raw.githubusercontent.com/${username}/${repoName}/data/sync_meta.json`;
-        
-        console.log(`Fetching remote data.json from ${dataUrl}...`);
-        const dataRes = await fetch(dataUrl);
-        if (dataRes.ok) {
-          const dataText = await dataRes.text();
-          await Deno.writeTextFile(DATA_FILE_PATH, dataText);
-          console.log("Successfully fetched and saved remote data.json!");
-        } else {
-          console.warn(`Failed to fetch data.json: Status ${dataRes.status}`);
-        }
+    // ignore
+  }
 
-        console.log(`Fetching remote sync_meta.json from ${metaUrl}...`);
-        const metaRes = await fetch(metaUrl);
-        if (metaRes.ok) {
-          const metaText = await metaRes.text();
-          await Deno.writeTextFile("./sync_meta.json", metaText);
-          console.log("Successfully fetched and saved remote sync_meta.json!");
-        }
-      } else {
-        console.warn("Could not parse repository owner/name from remote URL:", remoteUrl);
-      }
-    } catch (err) {
-      console.warn("Could not automatically fetch data.json from remote:", err);
+  const token = Deno.env.get("GITHUB_TOKEN");
+  if (token && remoteUrl) {
+    const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^.]+)/);
+    if (match) {
+      return `https://x-access-token:${token}@github.com/${match[1]}/${match[2]}.git`;
     }
   }
+  return remoteUrl;
 }
 
 async function runSync() {
@@ -138,8 +116,93 @@ async function runSync() {
   console.log("🔄 Starting Cozy Archiver Sync...");
   console.log("=========================================");
 
-  // Ensure local data.json exists by downloading it if missing
-  await ensureLocalDataFile();
+  DATA_FILE_PATH = "./data_branch/data.json";
+  META_FILE_PATH = "./data_branch/sync_meta.json";
+
+  const isCI = Deno.env.get("GITHUB_ACTIONS") === "true";
+  const remoteUrl = await getGitRemoteUrl();
+
+  // Ensure data_branch exists and is synced with remote
+  try {
+    const hasDataBranch = await Deno.stat("./data_branch").then(() => true).catch(() => false);
+    if (!hasDataBranch) {
+      console.log("Cloning remote 'data' branch...");
+      const cloneCmd = new Deno.Command("git", {
+        args: ["clone", "--branch", "data", remoteUrl, "./data_branch"],
+      });
+      const { success } = await cloneCmd.output();
+      if (!success) {
+        console.log("Failed to clone 'data' branch (may not exist yet). Initializing empty repository...");
+        await Deno.mkdir("./data_branch", { recursive: true });
+        
+        const gitInit = new Deno.Command("git", { args: ["init"], cwd: "./data_branch" });
+        await gitInit.output();
+        const gitCheckout = new Deno.Command("git", { args: ["checkout", "-b", "data"], cwd: "./data_branch" });
+        await gitCheckout.output();
+        if (remoteUrl) {
+          const gitRemote = new Deno.Command("git", { 
+            args: ["remote", "add", "origin", remoteUrl], 
+            cwd: "./data_branch" 
+          });
+          await gitRemote.output();
+        }
+      }
+    } else {
+      console.log("Pulling latest updates for 'data' branch...");
+      const pullCmd = new Deno.Command("git", {
+        args: ["pull", "origin", "data"],
+        cwd: "./data_branch",
+      });
+      const { success } = await pullCmd.output();
+      if (!success) {
+        console.warn("Git pull failed. Proceeding with existing local cache.");
+      }
+    }
+  } catch (err) {
+    console.error("Error preparing data branch:", err);
+    await Deno.mkdir("./data_branch", { recursive: true });
+  }
+
+  // Ensure images branch exists and is synced with remote
+  try {
+    const hasImagesBranch = await Deno.stat("./images").then(() => true).catch(() => false);
+    if (!hasImagesBranch) {
+      console.log("Cloning remote 'images' branch...");
+      const cloneCmd = new Deno.Command("git", {
+        args: ["clone", "--branch", "images", remoteUrl, "./images"],
+      });
+      const { success } = await cloneCmd.output();
+      if (!success) {
+        console.log("Failed to clone 'images' branch (may not exist yet). Initializing empty repository...");
+        await Deno.mkdir("./images", { recursive: true });
+        
+        const gitInit = new Deno.Command("git", { args: ["init"], cwd: "./images" });
+        await gitInit.output();
+        const gitCheckout = new Deno.Command("git", { args: ["checkout", "-b", "images"], cwd: "./images" });
+        await gitCheckout.output();
+        if (remoteUrl) {
+          const gitRemote = new Deno.Command("git", { 
+            args: ["remote", "add", "origin", remoteUrl], 
+            cwd: "./images" 
+          });
+          await gitRemote.output();
+        }
+      }
+    } else {
+      console.log("Pulling latest updates for 'images' branch...");
+      const pullCmd = new Deno.Command("git", {
+        args: ["pull", "origin", "images"],
+        cwd: "./images",
+      });
+      const { success } = await pullCmd.output();
+      if (!success) {
+        console.warn("Git pull for images failed. Proceeding with existing local cache.");
+      }
+    }
+  } catch (err) {
+    console.error("Error preparing images branch:", err);
+    await Deno.mkdir("./images", { recursive: true });
+  }
 
   // Parse arguments
   const filterSource = Deno.args.filter((arg) => !arg.startsWith("-"))[0];
@@ -283,6 +346,100 @@ async function runSync() {
 
   // 5. Save back to data.json
   await savePosts(limitedPosts);
+
+  console.log("Deploying data to data branch...");
+  try {
+    const git = async (...args: string[]) => {
+      const cmd = new Deno.Command("git", {
+        args,
+        cwd: "./data_branch",
+      });
+      const { success, stderr } = await cmd.output();
+      if (!success) {
+        console.error(`Git command failed: git ${args.join(" ")}`);
+        console.error(new TextDecoder().decode(stderr));
+      }
+      return success;
+    };
+
+    const hasGit = await Deno.stat("./data_branch/.git").then(() => true).catch(() => false);
+    if (hasGit) {
+      if (isCI) {
+        await git("config", "user.name", "github-actions[bot]");
+        await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
+      }
+
+      await git("add", "data.json", "sync_meta.json");
+      
+      const diffCmd = new Deno.Command("git", {
+        args: ["diff", "--cached", "--quiet"],
+        cwd: "./data_branch",
+      });
+      const { success: noChanges } = await diffCmd.output();
+
+      if (noChanges) {
+        console.log("No data changes to commit.");
+      } else {
+        await git("commit", "-m", "chore: auto-update news feeds");
+        
+        if (isCI && remoteUrl) {
+          await git("remote", "set-url", "origin", remoteUrl);
+        }
+        
+        await git("push", "origin", "data", "--force");
+        console.log("Successfully pushed data changes to data branch!");
+      }
+    }
+  } catch (err) {
+    console.error("Error pushing data changes to data branch:", err);
+  }
+
+  console.log("Deploying images to images branch...");
+  try {
+    const git = async (...args: string[]) => {
+      const cmd = new Deno.Command("git", {
+        args,
+        cwd: "./images",
+      });
+      const { success, stderr } = await cmd.output();
+      if (!success) {
+        console.error(`Git command failed: git ${args.join(" ")}`);
+        console.error(new TextDecoder().decode(stderr));
+      }
+      return success;
+    };
+
+    const hasGit = await Deno.stat("./images/.git").then(() => true).catch(() => false);
+    if (hasGit) {
+      if (isCI) {
+        await git("config", "user.name", "github-actions[bot]");
+        await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
+      }
+
+      await git("add", ".");
+      
+      const diffCmd = new Deno.Command("git", {
+        args: ["diff", "--cached", "--quiet"],
+        cwd: "./images",
+      });
+      const { success: noChanges } = await diffCmd.output();
+
+      if (noChanges) {
+        console.log("No image changes to commit.");
+      } else {
+        await git("commit", "-m", "chore: auto-sync active images");
+        
+        if (isCI && remoteUrl) {
+          await git("remote", "set-url", "origin", remoteUrl);
+        }
+        
+        await git("push", "origin", "images", "--force");
+        console.log("Successfully pushed images to images branch!");
+      }
+    }
+  } catch (err) {
+    console.error("Error pushing images to images branch:", err);
+  }
 
   console.log("=========================================");
   console.log(`Cozy Sync Finished!`);
