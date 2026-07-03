@@ -135,6 +135,7 @@ export function App() {
     }
   }, [activePostId]);
 
+
   // Compute text for relative updated time
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdated) return "Đang kiểm tra...";
@@ -258,6 +259,34 @@ export function App() {
       globalThis.location.hash = "All";
     }
   };
+
+  // Listen for arrow keys to navigate posts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in input, select, textarea, or contenteditable elements
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          activeEl.hasAttribute("contenteditable"))
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowLeft" && readerNavigation.onPrev) {
+        readerNavigation.onPrev();
+      } else if (e.key === "ArrowRight" && readerNavigation.onNext) {
+        readerNavigation.onNext();
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [readerNavigation.onPrev, readerNavigation.onNext]);
 
   return (
     <div className={`app-container ${activePost ? "has-active-post" : ""}`}>
