@@ -111,6 +111,61 @@ async function getGitRemoteUrl(): Promise<string> {
   return remoteUrl;
 }
 
+// Helper to prepare Git branches (handles cloning, fetching, pulling and in-place initialization)
+async function prepareGitBranch(dir: string, branch: string, remoteUrl: string) {
+  try {
+    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() => false);
+    if (hasGit) {
+      console.log(`Pulling latest updates for '${branch}' branch in ${dir}...`);
+      const pullCmd = new Deno.Command("git", {
+        args: ["pull", "origin", branch],
+        cwd: dir,
+      });
+      const { success } = await pullCmd.output();
+      if (!success) {
+        console.warn(`Git pull for ${branch} failed in ${dir}. Proceeding with existing local cache.`);
+      }
+      return;
+    }
+
+    const hasDir = await Deno.stat(dir).then(() => true).catch(() => false);
+    if (!hasDir) {
+      console.log(`Cloning remote '${branch}' branch into ${dir}...`);
+      const cloneCmd = new Deno.Command("git", {
+        args: ["clone", "--branch", branch, remoteUrl, dir],
+      });
+      const { success } = await cloneCmd.output();
+      if (success) return;
+    }
+
+    // Initialize in-place if directory exists or clone failed
+    console.log(`Initializing Git repository in ${dir} for '${branch}' branch...`);
+    await Deno.mkdir(dir, { recursive: true });
+    
+    const git = async (...args: string[]) => {
+      const cmd = new Deno.Command("git", { args, cwd: dir });
+      const { success, stderr } = await cmd.output();
+      if (!success) {
+        console.warn(`Git command failed in ${dir}: git ${args.join(" ")}`);
+        console.warn(new TextDecoder().decode(stderr));
+      }
+      return success;
+    };
+
+    await git("init");
+    await git("checkout", "-b", branch);
+    if (remoteUrl) {
+      await git("remote", "add", "origin", remoteUrl);
+      console.log(`Fetching remote '${branch}' branch in ${dir}...`);
+      await git("fetch", "origin", branch);
+      await git("reset", "--mixed", `origin/${branch}`);
+    }
+  } catch (err) {
+    console.error(`Error preparing branch ${branch} in ${dir}:`, err);
+    await Deno.mkdir(dir, { recursive: true });
+  }
+}
+
 async function runSync() {
   console.log("=========================================");
   console.log("🔄 Starting Cozy Archiver Sync...");
@@ -122,87 +177,11 @@ async function runSync() {
   const isCI = Deno.env.get("GITHUB_ACTIONS") === "true";
   const remoteUrl = await getGitRemoteUrl();
 
-  // Ensure data_branch exists and is synced with remote
-  try {
-    const hasDataBranch = await Deno.stat("./data_branch").then(() => true).catch(() => false);
-    if (!hasDataBranch) {
-      console.log("Cloning remote 'data' branch...");
-      const cloneCmd = new Deno.Command("git", {
-        args: ["clone", "--branch", "data", remoteUrl, "./data_branch"],
-      });
-      const { success } = await cloneCmd.output();
-      if (!success) {
-        console.log("Failed to clone 'data' branch (may not exist yet). Initializing empty repository...");
-        await Deno.mkdir("./data_branch", { recursive: true });
-        
-        const gitInit = new Deno.Command("git", { args: ["init"], cwd: "./data_branch" });
-        await gitInit.output();
-        const gitCheckout = new Deno.Command("git", { args: ["checkout", "-b", "data"], cwd: "./data_branch" });
-        await gitCheckout.output();
-        if (remoteUrl) {
-          const gitRemote = new Deno.Command("git", { 
-            args: ["remote", "add", "origin", remoteUrl], 
-            cwd: "./data_branch" 
-          });
-          await gitRemote.output();
-        }
-      }
-    } else {
-      console.log("Pulling latest updates for 'data' branch...");
-      const pullCmd = new Deno.Command("git", {
-        args: ["pull", "origin", "data"],
-        cwd: "./data_branch",
-      });
-      const { success } = await pullCmd.output();
-      if (!success) {
-        console.warn("Git pull failed. Proceeding with existing local cache.");
-      }
-    }
-  } catch (err) {
-    console.error("Error preparing data branch:", err);
-    await Deno.mkdir("./data_branch", { recursive: true });
-  }
+  // Prepare data branch
+  await prepareGitBranch("./data_branch", "data", remoteUrl);
 
-  // Ensure images branch exists and is synced with remote
-  try {
-    const hasImagesBranch = await Deno.stat("./images").then(() => true).catch(() => false);
-    if (!hasImagesBranch) {
-      console.log("Cloning remote 'images' branch...");
-      const cloneCmd = new Deno.Command("git", {
-        args: ["clone", "--branch", "images", remoteUrl, "./images"],
-      });
-      const { success } = await cloneCmd.output();
-      if (!success) {
-        console.log("Failed to clone 'images' branch (may not exist yet). Initializing empty repository...");
-        await Deno.mkdir("./images", { recursive: true });
-        
-        const gitInit = new Deno.Command("git", { args: ["init"], cwd: "./images" });
-        await gitInit.output();
-        const gitCheckout = new Deno.Command("git", { args: ["checkout", "-b", "images"], cwd: "./images" });
-        await gitCheckout.output();
-        if (remoteUrl) {
-          const gitRemote = new Deno.Command("git", { 
-            args: ["remote", "add", "origin", remoteUrl], 
-            cwd: "./images" 
-          });
-          await gitRemote.output();
-        }
-      }
-    } else {
-      console.log("Pulling latest updates for 'images' branch...");
-      const pullCmd = new Deno.Command("git", {
-        args: ["pull", "origin", "images"],
-        cwd: "./images",
-      });
-      const { success } = await pullCmd.output();
-      if (!success) {
-        console.warn("Git pull for images failed. Proceeding with existing local cache.");
-      }
-    }
-  } catch (err) {
-    console.error("Error preparing images branch:", err);
-    await Deno.mkdir("./images", { recursive: true });
-  }
+  // Prepare images branch
+  await prepareGitBranch("./images", "images", remoteUrl);
 
   // Parse arguments
   const filterSource = Deno.args.filter((arg) => !arg.startsWith("-"))[0];
