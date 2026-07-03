@@ -166,6 +166,74 @@ async function prepareGitBranch(dir: string, branch: string, remoteUrl: string) 
   }
 }
 
+// Helper to push Git branch with squashed history (exactly 1 commit on the remote branch)
+async function pushGitBranch(
+  dir: string,
+  branch: string,
+  message: string,
+  isCI: boolean,
+  remoteUrl: string,
+) {
+  console.log(`Deploying ${branch} to ${branch} branch...`);
+  try {
+    const git = async (...args: string[]) => {
+      const cmd = new Deno.Command("git", {
+        args,
+        cwd: dir,
+      });
+      const { success, stderr } = await cmd.output();
+      if (!success) {
+        console.error(`Git command failed in ${dir}: git ${args.join(" ")}`);
+        console.error(new TextDecoder().decode(stderr));
+      }
+      return success;
+    };
+
+    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() => false);
+    if (!hasGit) {
+      console.warn(`No Git repository found in ${dir}. Skipping push.`);
+      return;
+    }
+
+    if (isCI) {
+      await git("config", "user.name", "github-actions[bot]");
+      await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
+    }
+
+    await git("add", ".");
+    
+    // Check if there are changes
+    const diffCmd = new Deno.Command("git", {
+      args: ["diff", "--cached", "--quiet"],
+      cwd: dir,
+    });
+    const { success: noChanges } = await diffCmd.output();
+
+    if (noChanges) {
+      console.log(`No changes to commit for ${branch}.`);
+      return;
+    }
+
+    // Squash history into a single commit by creating an orphan branch
+    console.log(`Squashing history for ${branch} branch...`);
+    await git("checkout", "--orphan", "temp_branch");
+    await git("commit", "-m", message);
+    await git("branch", "-M", branch);
+    
+    if (isCI && remoteUrl) {
+      await git("remote", "set-url", "origin", remoteUrl);
+    }
+    
+    console.log(`Force-pushing ${branch} branch to remote...`);
+    const pushSuccess = await git("push", "origin", branch, "--force");
+    if (pushSuccess) {
+      console.log(`Successfully pushed ${branch} branch to remote!`);
+    }
+  } catch (err) {
+    console.error(`Error pushing ${branch} branch:`, err);
+  }
+}
+
 async function runSync() {
   console.log("=========================================");
   console.log("🔄 Starting Cozy Archiver Sync...");
@@ -326,99 +394,11 @@ async function runSync() {
   // 5. Save back to data.json
   await savePosts(limitedPosts);
 
-  console.log("Deploying data to data branch...");
-  try {
-    const git = async (...args: string[]) => {
-      const cmd = new Deno.Command("git", {
-        args,
-        cwd: "./data_branch",
-      });
-      const { success, stderr } = await cmd.output();
-      if (!success) {
-        console.error(`Git command failed: git ${args.join(" ")}`);
-        console.error(new TextDecoder().decode(stderr));
-      }
-      return success;
-    };
+  // Deploy data
+  await pushGitBranch("./data_branch", "data", "chore: auto-update news feeds", isCI, remoteUrl);
 
-    const hasGit = await Deno.stat("./data_branch/.git").then(() => true).catch(() => false);
-    if (hasGit) {
-      if (isCI) {
-        await git("config", "user.name", "github-actions[bot]");
-        await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
-      }
-
-      await git("add", "data.json", "sync_meta.json");
-      
-      const diffCmd = new Deno.Command("git", {
-        args: ["diff", "--cached", "--quiet"],
-        cwd: "./data_branch",
-      });
-      const { success: noChanges } = await diffCmd.output();
-
-      if (noChanges) {
-        console.log("No data changes to commit.");
-      } else {
-        await git("commit", "-m", "chore: auto-update news feeds");
-        
-        if (isCI && remoteUrl) {
-          await git("remote", "set-url", "origin", remoteUrl);
-        }
-        
-        await git("push", "origin", "data", "--force");
-        console.log("Successfully pushed data changes to data branch!");
-      }
-    }
-  } catch (err) {
-    console.error("Error pushing data changes to data branch:", err);
-  }
-
-  console.log("Deploying images to images branch...");
-  try {
-    const git = async (...args: string[]) => {
-      const cmd = new Deno.Command("git", {
-        args,
-        cwd: "./images",
-      });
-      const { success, stderr } = await cmd.output();
-      if (!success) {
-        console.error(`Git command failed: git ${args.join(" ")}`);
-        console.error(new TextDecoder().decode(stderr));
-      }
-      return success;
-    };
-
-    const hasGit = await Deno.stat("./images/.git").then(() => true).catch(() => false);
-    if (hasGit) {
-      if (isCI) {
-        await git("config", "user.name", "github-actions[bot]");
-        await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
-      }
-
-      await git("add", ".");
-      
-      const diffCmd = new Deno.Command("git", {
-        args: ["diff", "--cached", "--quiet"],
-        cwd: "./images",
-      });
-      const { success: noChanges } = await diffCmd.output();
-
-      if (noChanges) {
-        console.log("No image changes to commit.");
-      } else {
-        await git("commit", "-m", "chore: auto-sync active images");
-        
-        if (isCI && remoteUrl) {
-          await git("remote", "set-url", "origin", remoteUrl);
-        }
-        
-        await git("push", "origin", "images", "--force");
-        console.log("Successfully pushed images to images branch!");
-      }
-    }
-  } catch (err) {
-    console.error("Error pushing images to images branch:", err);
-  }
+  // Deploy images
+  await pushGitBranch("./images", "images", "chore: auto-sync active images", isCI, remoteUrl);
 
   console.log("=========================================");
   console.log(`Cozy Sync Finished!`);
