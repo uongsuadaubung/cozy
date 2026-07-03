@@ -29,7 +29,7 @@ export function useFeedData() {
           globalThis.location.pathname.split("/").filter(Boolean)[0];
         if (username && repoName) {
           dataUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/data.json`;
+            `https://raw.githubusercontent.com/${username}/${repoName}/data/data.json`;
         }
       }
 
@@ -46,7 +46,7 @@ export function useFeedData() {
           globalThis.location.pathname.split("/").filter(Boolean)[0];
         if (username && repoName) {
           metaUrl =
-            `https://raw.githubusercontent.com/${username}/${repoName}/main/sync_meta.json`;
+            `https://raw.githubusercontent.com/${username}/${repoName}/data/sync_meta.json`;
         }
       }
 

@@ -1,11 +1,6 @@
 name: Cozy Feed Deploy UI
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "data.json" # Tránh deploy lại UI chỉ vì data.json thay đổi
   workflow_dispatch: # Kích hoạt thủ công từ tab Actions
 
 permissions:

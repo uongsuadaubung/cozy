@@ -31,6 +31,16 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Fetch existing data
+        run: |
+          git clone --branch data https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git data_branch || mkdir data_branch
+          if [ -f data_branch/data.json ]; then
+            cp data_branch/data.json ./data.json
+          fi
+          if [ -f data_branch/sync_meta.json ]; then
+            cp data_branch/sync_meta.json ./sync_meta.json
+          fi
+
       - name: Fetch existing images
         run: |
           git clone --branch images https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git images || mkdir images
@@ -70,16 +80,27 @@ jobs:
             echo "No images found. Skipping images branch deploy."
           fi
 
-      - name: Commit and Push Data Changes
+      - name: Deploy Data to data branch
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json sync_meta.json
-
-          # Chỉ commit nếu data.json hoặc sync_meta.json có thay đổi
-          if git diff --cached --quiet; then
-            echo "No changes in data.json or sync_meta.json. Skipping commit."
+          if [ -f "data.json" ]; then
+            echo "Deploying data to data branch..."
+            mkdir -p data_branch
+            cp data.json sync_meta.json data_branch/
+            cd data_branch
+            if [ ! -d ".git" ]; then
+              git init
+              git checkout -b data
+              git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            fi
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            if git diff --cached --quiet; then
+              echo "No data changes to commit."
+            else
+              git commit -m "chore: auto-update news feeds"
+              git push origin data --force
+            fi
           else
-            git commit -m "chore: auto-update news feeds [skip ci]"
-            git push
+            echo "No data.json found. Skipping."
           fi
