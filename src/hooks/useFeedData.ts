@@ -24,8 +24,8 @@ export function useFeedData() {
     let repoName = "cozy";
     if (globalThis.location.hostname.endsWith("github.io")) {
       username = globalThis.location.hostname.split(".")[0];
-      repoName =
-        globalThis.location.pathname.split("/").filter(Boolean)[0] || "cozy";
+      repoName = globalThis.location.pathname.split("/").filter(Boolean)[0] ||
+        "cozy";
     }
     return `https://raw.githubusercontent.com/${username}/${repoName}`;
   };

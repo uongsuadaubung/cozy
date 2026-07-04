@@ -69,7 +69,10 @@ async function loadExistingPosts(): Promise<PostWithContent[]> {
       console.log(`No existing ${DATA_FILE_PATH} found. Starting fresh.`);
       return [];
     }
-    console.error(`Error reading existing ${DATA_FILE_PATH}, starting fresh:`, err);
+    console.error(
+      `Error reading existing ${DATA_FILE_PATH}, starting fresh:`,
+      err,
+    );
     return [];
   }
 }
@@ -105,16 +108,24 @@ async function getGitRemoteUrl(): Promise<string> {
   if (token && remoteUrl) {
     const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^.]+)/);
     if (match) {
-      return `https://x-access-token:${token}@github.com/${match[1]}/${match[2]}.git`;
+      return `https://x-access-token:${token}@github.com/${match[1]}/${
+        match[2]
+      }.git`;
     }
   }
   return remoteUrl;
 }
 
 // Helper to prepare Git branches (handles cloning, fetching, pulling and in-place initialization)
-async function prepareGitBranch(dir: string, branch: string, remoteUrl: string) {
+async function prepareGitBranch(
+  dir: string,
+  branch: string,
+  remoteUrl: string,
+) {
   try {
-    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() => false);
+    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() =>
+      false
+    );
     if (hasGit) {
       console.log(`Pulling latest updates for '${branch}' branch in ${dir}...`);
       const pullCmd = new Deno.Command("git", {
@@ -123,7 +134,9 @@ async function prepareGitBranch(dir: string, branch: string, remoteUrl: string) 
       });
       const { success } = await pullCmd.output();
       if (!success) {
-        console.warn(`Git pull for ${branch} failed in ${dir}. Proceeding with existing local cache.`);
+        console.warn(
+          `Git pull for ${branch} failed in ${dir}. Proceeding with existing local cache.`,
+        );
       }
       return;
     }
@@ -139,9 +152,11 @@ async function prepareGitBranch(dir: string, branch: string, remoteUrl: string) 
     }
 
     // Initialize in-place if directory exists or clone failed
-    console.log(`Initializing Git repository in ${dir} for '${branch}' branch...`);
+    console.log(
+      `Initializing Git repository in ${dir} for '${branch}' branch...`,
+    );
     await Deno.mkdir(dir, { recursive: true });
-    
+
     const git = async (...args: string[]) => {
       const cmd = new Deno.Command("git", { args, cwd: dir });
       const { success, stderr } = await cmd.output();
@@ -189,7 +204,9 @@ async function pushGitBranch(
       return success;
     };
 
-    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() => false);
+    const hasGit = await Deno.stat(`${dir}/.git`).then(() => true).catch(() =>
+      false
+    );
     if (!hasGit) {
       console.warn(`No Git repository found in ${dir}. Skipping push.`);
       return;
@@ -197,11 +214,15 @@ async function pushGitBranch(
 
     if (isCI) {
       await git("config", "user.name", "github-actions[bot]");
-      await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
+      await git(
+        "config",
+        "user.email",
+        "41898282+github-actions[bot]@users.noreply.github.com",
+      );
     }
 
     await git("add", ".");
-    
+
     // Check if there are changes
     const diffCmd = new Deno.Command("git", {
       args: ["diff", "--cached", "--quiet"],
@@ -219,11 +240,11 @@ async function pushGitBranch(
     await git("checkout", "--orphan", "temp_branch");
     await git("commit", "-m", message);
     await git("branch", "-M", branch);
-    
+
     if (isCI && remoteUrl) {
       await git("remote", "set-url", "origin", remoteUrl);
     }
-    
+
     console.log(`Force-pushing ${branch} branch to remote...`);
     const pushSuccess = await git("push", "origin", branch, "--force");
     if (pushSuccess) {
@@ -395,10 +416,22 @@ async function runSync() {
   await savePosts(limitedPosts);
 
   // Deploy data
-  await pushGitBranch("./data_branch", "data", "chore: auto-update news feeds", isCI, remoteUrl);
+  await pushGitBranch(
+    "./data_branch",
+    "data",
+    "chore: auto-update news feeds",
+    isCI,
+    remoteUrl,
+  );
 
   // Deploy images
-  await pushGitBranch("./images", "images", "chore: auto-sync active images", isCI, remoteUrl);
+  await pushGitBranch(
+    "./images",
+    "images",
+    "chore: auto-sync active images",
+    isCI,
+    remoteUrl,
+  );
 
   console.log("=========================================");
   console.log(`Cozy Sync Finished!`);

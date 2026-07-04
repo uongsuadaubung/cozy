@@ -25,3 +25,4 @@ data.json
 sync_meta.json
 data_branch/
 
+.zed/settings.json

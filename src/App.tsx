@@ -4,7 +4,9 @@ import { Welcome } from "./Welcome.tsx";
 import { Reader } from "./Reader.tsx";
 import { SourceSelectorModal } from "./SourceSelectorModal.tsx";
 import { Post, useFeedData } from "./hooks/useFeedData.ts";
-import { getSourceColor } from "./utils.ts";
+import { useReaderHotkeys } from "./hooks/useReaderHotkeys.ts";
+import { FeedHeader } from "./FeedHeader.tsx";
+import { PostCard } from "./PostCard.tsx";
 
 export function App() {
   const {
@@ -38,9 +40,13 @@ export function App() {
   });
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [showSourcesModal, setShowSourcesModal] = useState<boolean>(false);
-  const [filterMode, setFilterMode] = useState<"newest" | "unread-first">(() => {
-    return (localStorage.getItem("cozy_filter_mode") as "newest" | "unread-first") || "newest";
-  });
+  const [filterMode, setFilterMode] = useState<"newest" | "unread-first">(
+    () => {
+      return (localStorage.getItem("cozy_filter_mode") as
+        | "newest"
+        | "unread-first") || "newest";
+    },
+  );
 
   const handleFilterModeChange = (mode: "newest" | "unread-first") => {
     setFilterMode(mode);
@@ -135,7 +141,6 @@ export function App() {
     }
   }, [activePostId]);
 
-
   // Compute text for relative updated time
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdated) return "Đang kiểm tra...";
@@ -191,12 +196,22 @@ export function App() {
         if (isReadA !== isReadB) {
           return isReadA ? 1 : -1; // Tin chưa đọc (false) xếp trước
         }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime();
       });
     }
 
-    return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [posts, activeSource, visibleSources, filterMode, readPosts, activePostId]);
+    return [...list].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [
+    posts,
+    activeSource,
+    visibleSources,
+    filterMode,
+    readPosts,
+    activePostId,
+  ]);
 
   // Derive active post object
   const activePost = useMemo(() => {
@@ -260,33 +275,12 @@ export function App() {
     }
   };
 
-  // Listen for arrow keys to navigate posts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in input, select, textarea, or contenteditable elements
-      const activeEl = document.activeElement;
-      if (
-        activeEl &&
-        (activeEl.tagName === "INPUT" ||
-          activeEl.tagName === "TEXTAREA" ||
-          activeEl.tagName === "SELECT" ||
-          activeEl.hasAttribute("contenteditable"))
-      ) {
-        return;
-      }
-
-      if (e.key === "ArrowLeft" && readerNavigation.onPrev) {
-        readerNavigation.onPrev();
-      } else if (e.key === "ArrowRight" && readerNavigation.onNext) {
-        readerNavigation.onNext();
-      }
-    };
-
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => {
-      globalThis.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [readerNavigation.onPrev, readerNavigation.onNext]);
+  // Setup keyboard hotkeys and scrolling navigation
+  useReaderHotkeys({
+    onPrev: readerNavigation.onPrev,
+    onNext: readerNavigation.onNext,
+    activePostId,
+  });
 
   return (
     <div className={`app-container ${activePost ? "has-active-post" : ""}`}>
@@ -306,38 +300,14 @@ export function App() {
 
       {/* 2. MAIN FEED LIST */}
       <main className="feed-container">
-        <header className="feed-header">
-          <div className="feed-header-top">
-            <button
-              type="button"
-              className="menu-toggle-btn"
-              onClick={() => setSidebarOpen(true)}
-              title="Mở danh mục"
-            >
-              ☰
-            </button>
-            <h1 className="feed-title">
-              {sourceLabels[activeSource] || activeSource}
-            </h1>
-          </div>
-          <div className="feed-controls">
-            <span className="feed-subtitle">
-              {loading
-                ? "Đang tải bài viết..."
-                : `Hiển thị ${filteredPosts.length} bài viết`}
-            </span>
-            <div className="filter-dropdown-container">
-              <select
-                className="filter-select"
-                value={filterMode}
-                onChange={(e) => handleFilterModeChange(e.currentTarget.value as "newest" | "unread-first")}
-              >
-                <option value="newest">Mới nhất</option>
-                <option value="unread-first">Chưa đọc</option>
-              </select>
-            </div>
-          </div>
-        </header>
+        <FeedHeader
+          title={sourceLabels[activeSource] || activeSource}
+          loading={loading}
+          postCount={filteredPosts.length}
+          filterMode={filterMode}
+          onFilterModeChange={handleFilterModeChange}
+          onOpenSidebar={() => setSidebarOpen(true)}
+        />
 
         <div className="feed-list">
           {!loading && visibleSources.length === 0
@@ -359,48 +329,16 @@ export function App() {
               </div>
             )
             : (
-              filteredPosts.map((post) => {
-                const isRead = readPosts.has(post.id);
-                const isActive = activePostId === post.id;
-                const formattedDate = new Date(post.createdAt)
-                  .toLocaleDateString("vi-VN");
-
-                return (
-                  <div
-                    key={post.id}
-                    className={`post-card-container ${
-                      isRead ? "read-fade" : ""
-                    }`}
-                  >
-                    <a
-                      className={`post-card ${isActive ? "active" : ""}`}
-                      onClick={() => handleSelectPost(post.id)}
-                    >
-                      <div className="post-meta">
-                        <span
-                          className="source-tag"
-                          style={getSourceColor(post.source)}
-                        >
-                          {sourceLabels[post.source] || post.source}
-                        </span>
-                        <span>•</span>
-                        <span>Tác giả: {post.author}</span>
-                        <span>•</span>
-                        <span>{formattedDate}</span>
-                      </div>
-                      <h2
-                        className="post-title"
-                        style={{ paddingRight: "24px" }}
-                      >
-                        {post.title}
-                      </h2>
-                      {post.summary && (
-                        <p className="post-summary">{post.summary}</p>
-                      )}
-                    </a>
-                  </div>
-                );
-              })
+              filteredPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isRead={readPosts.has(post.id)}
+                  isActive={activePostId === post.id}
+                  sourceLabel={sourceLabels[post.source] || post.source}
+                  onClick={() => handleSelectPost(post.id)}
+                />
+              ))
             )}
         </div>
       </main>

@@ -38,7 +38,8 @@ export class VTCNewsScraper implements Scraper {
           const href = titleLink.attr("href");
           if (!href) return;
 
-          const title = titleLink.text().trim() || titleLink.attr("title") || "";
+          const title = titleLink.text().trim() || titleLink.attr("title") ||
+            "";
           if (!title) return;
 
           const summary = $el.find("p").first().text().trim();
