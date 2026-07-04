@@ -34,10 +34,10 @@ export function useReaderHotkeys({
         if (readerPane) {
           if (e.key === "ArrowUp") {
             e.preventDefault();
-            readerPane.scrollBy({ top: -100, behavior: "smooth" });
+            readerPane.scrollBy({ top: -200, behavior: "smooth" });
           } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            readerPane.scrollBy({ top: 100, behavior: "smooth" });
+            readerPane.scrollBy({ top: 200, behavior: "smooth" });
           } else if (e.key === "PageUp") {
             e.preventDefault();
             readerPane.scrollBy({

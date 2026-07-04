@@ -304,6 +304,7 @@ export function App() {
           title={sourceLabels[activeSource] || activeSource}
           loading={loading}
           postCount={filteredPosts.length}
+          unreadCount={unreadCounts[activeSource] || 0}
           filterMode={filterMode}
           onFilterModeChange={handleFilterModeChange}
           onOpenSidebar={() => setSidebarOpen(true)}

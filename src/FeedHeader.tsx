@@ -2,6 +2,7 @@ interface FeedHeaderProps {
   title: string;
   loading: boolean;
   postCount: number;
+  unreadCount: number;
   filterMode: "newest" | "unread-first";
   onFilterModeChange: (mode: "newest" | "unread-first") => void;
   onOpenSidebar: () => void;
@@ -11,6 +12,7 @@ export function FeedHeader({
   title,
   loading,
   postCount,
+  unreadCount,
   filterMode,
   onFilterModeChange,
   onOpenSidebar,
@@ -30,7 +32,11 @@ export function FeedHeader({
       </div>
       <div className="feed-controls">
         <span className="feed-subtitle">
-          {loading ? "Đang tải bài viết..." : `Hiển thị ${postCount} bài viết`}
+          {loading
+            ? "Đang tải bài viết..."
+            : filterMode === "unread-first"
+            ? `${unreadCount} bài viết chưa đọc`
+            : `Hiển thị ${postCount} bài viết`}
         </span>
         <div className="filter-dropdown-container">
           <select
