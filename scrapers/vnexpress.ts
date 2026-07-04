@@ -119,7 +119,7 @@ export class VnExpressScraper implements Scraper {
 
     // Clean up unnecessary elements
     contentEl.find(
-      "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor",
+      "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor, .social-com",
     ).remove();
 
     // Remove the title/description elements if nested inside .fck_detail to prevent double rendering in UI
