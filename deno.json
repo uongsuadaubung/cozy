@@ -5,6 +5,7 @@
     "preact": "npm:preact@^10.22.0",
     "preact/hooks": "npm:preact@^10.22.0/hooks",
     "preact/jsx-runtime": "npm:preact@^10.22.0/jsx-runtime",
+    "sharp": "npm:sharp@^0.35.3",
     "zod": "npm:zod@^4.4.3"
   },
   "compilerOptions": {
@@ -14,8 +15,8 @@
   "tasks": {
     "start": "deno run --allow-net --allow-read serve.ts",
     "dev": "deno run --allow-net --allow-read serve.ts",
-    "sync": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run sync.ts",
-    "build": "deno run --allow-run --allow-read --allow-write --allow-env build.ts"
+    "sync": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run --allow-ffi sync.ts",
+    "build": "deno run --allow-run --allow-read --allow-write --allow-env --allow-ffi build.ts"
   },
   "lint": {
     "exclude": [

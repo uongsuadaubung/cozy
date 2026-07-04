@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import sharp from "sharp";
 
 // Helper to hash URL to a unique filename using native Web Crypto API
 async function hashUrl(url: string): Promise<string> {
@@ -11,8 +12,8 @@ async function hashUrl(url: string): Promise<string> {
   return hashHex;
 }
 
-// Download image helper
-async function downloadImage(url: string, destPath: string): Promise<boolean> {
+// Download image helper with optional compression
+async function downloadImage(url: string, destPath: string, isGif: boolean): Promise<boolean> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -23,7 +24,23 @@ async function downloadImage(url: string, destPath: string): Promise<boolean> {
     });
     if (!res.ok) return false;
     const buffer = await res.arrayBuffer();
-    await Deno.writeFile(destPath, new Uint8Array(buffer));
+    const uint8Array = new Uint8Array(buffer);
+
+    if (isGif) {
+      // Keep original GIF format to preserve animations
+      await Deno.writeFile(destPath, uint8Array);
+    } else {
+      try {
+        // Compress and convert to webp format
+        await sharp(uint8Array)
+          .webp({ quality: 80 })
+          .toFile(destPath);
+      } catch (sharpErr) {
+        console.warn(`      ⚠️ Sharp compression failed for ${url}, falling back to original image:`, sharpErr);
+        // Fallback: save original image data directly
+        await Deno.writeFile(destPath, uint8Array);
+      }
+    }
     return true;
   } catch (err) {
     console.error(`      ❌ Error downloading image ${url}:`, err);
@@ -54,13 +71,14 @@ export async function processPostImages(
 
       if (!src.startsWith("http")) continue;
 
-      let ext = "jpg";
+      let ext = "webp";
+      let isGif = false;
       try {
-        const pathname = new URL(src).pathname;
-        if (pathname.endsWith(".png")) ext = "png";
-        else if (pathname.endsWith(".webp")) ext = "webp";
-        else if (pathname.endsWith(".gif")) ext = "gif";
-        else if (pathname.endsWith(".jpeg")) ext = "jpeg";
+        const pathname = new URL(src).pathname.toLowerCase();
+        if (pathname.endsWith(".gif")) {
+          ext = "gif";
+          isGif = true;
+        }
       } catch (_) {
         // ignore pathname parsing errors
       }
@@ -75,7 +93,7 @@ export async function processPostImages(
         downloaded = true; // Already exists
       } catch (_) {
         console.log(`      [IMG] Downloading image: ${src.slice(0, 60)}...`);
-        downloaded = await downloadImage(src, destPath);
+        downloaded = await downloadImage(src, destPath, isGif);
       }
 
       if (downloaded) {
@@ -94,3 +112,4 @@ export async function processPostImages(
     return content;
   }
 }
+
