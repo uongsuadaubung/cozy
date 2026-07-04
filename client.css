@@ -175,7 +175,6 @@ body {
   font-weight: 600;
 }
 
-
 /* Sidebar Footer / Action buttons */
 .sidebar-footer {
   border-top: 1px solid var(--border-color);
@@ -700,7 +699,6 @@ body {
   }
 }
 
-
 .btn-add-source-icon {
   background: none;
   border: none;
@@ -768,7 +766,6 @@ body {
   color: var(--text-secondary);
   margin-bottom: 24px;
 }
-
 
 .welcome-tip {
   font-size: 12px;
@@ -888,7 +885,6 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 
 .source-modal-footer {
   display: flex;
@@ -1015,5 +1011,3 @@ body {
     padding: 0;
   }
 }
-
-
