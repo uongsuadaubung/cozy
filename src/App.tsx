@@ -125,19 +125,33 @@ export function App() {
     };
   }, []);
 
-  // Scroll reader pane to top when active post changes
+  // Scroll reader pane to top and active post card in feed list into view when active post changes
   useEffect(() => {
     if (activePostId) {
+      // 1. Scroll reader pane to top
       const scrollReaderToTop = () => {
         const readerPane = document.getElementById("reader-pane");
         if (readerPane) {
           readerPane.scrollTop = 0;
         }
       };
-      // Run immediately (since DOM might have updated) and via timeout to guarantee
       scrollReaderToTop();
-      const id = setTimeout(scrollReaderToTop, 50);
-      return () => clearTimeout(id);
+      const readerTimeoutId = setTimeout(scrollReaderToTop, 50);
+
+      // 2. Scroll active post card in feed list into view (centered)
+      const scrollActiveCardIntoView = () => {
+        const activeCard = document.querySelector(".post-card.active");
+        if (activeCard) {
+          activeCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      };
+      scrollActiveCardIntoView();
+      const cardTimeoutId = setTimeout(scrollActiveCardIntoView, 50);
+
+      return () => {
+        clearTimeout(readerTimeoutId);
+        clearTimeout(cardTimeoutId);
+      };
     }
   }, [activePostId]);
 
