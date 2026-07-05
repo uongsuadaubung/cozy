@@ -12,6 +12,44 @@ async function hashUrl(url: string): Promise<string> {
   return hashHex;
 }
 
+// Helper to compress image to a target file size (e.g. 50KB) and limit max width to 1000px
+async function compressImageToLimit(
+  inputBuffer: Uint8Array,
+  maxSizeInBytes: number = 50 * 1024,
+): Promise<Uint8Array> {
+  try {
+    const metadata = await sharp(inputBuffer).metadata();
+    const originalWidth = metadata.width || 1200;
+    
+    // Giới hạn chiều rộng tối đa là 1000px ngay từ đầu
+    const targetWidth = Math.min(originalWidth, 1000);
+
+    let quality = 80;
+    const step = 5;
+    let outputBuffer = inputBuffer;
+
+    while (quality >= 60) {
+      // Resize về tối đa targetWidth và nén WebP với chất lượng giảm dần
+      outputBuffer = await sharp(inputBuffer)
+        .resize(targetWidth)
+        .webp({ quality })
+        .toBuffer();
+
+      if (outputBuffer.length <= maxSizeInBytes) {
+        return outputBuffer;
+      }
+
+      quality -= step;
+    }
+
+    // Nếu chất lượng đã xuống mức 60 mà dung lượng vẫn > 50KB, chấp nhận dùng phiên bản chất lượng 60
+    return outputBuffer;
+  } catch (err) {
+    console.warn("      ⚠️ Failed to optimize image size, returning original buffer:", err);
+    return inputBuffer;
+  }
+}
+
 // Download image helper with optional compression
 async function downloadImage(url: string, destPath: string, isGif: boolean): Promise<boolean> {
   try {
@@ -31,10 +69,9 @@ async function downloadImage(url: string, destPath: string, isGif: boolean): Pro
       await Deno.writeFile(destPath, uint8Array);
     } else {
       try {
-        // Compress and convert to webp format
-        await sharp(uint8Array)
-          .webp({ quality: 80 })
-          .toFile(destPath);
+        // Compress and convert to webp format under 50KB
+        const compressed = await compressImageToLimit(uint8Array, 50 * 1024);
+        await Deno.writeFile(destPath, compressed);
       } catch (sharpErr) {
         console.warn(`      ⚠️ Sharp compression failed for ${url}, falling back to original image:`, sharpErr);
         // Fallback: save original image data directly
