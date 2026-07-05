@@ -458,6 +458,31 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
+.reader-body .cozy-picture {
+  margin: 24px auto;
+  text-align: center;
+  max-width: 100%;
+}
+
+.reader-body .cozy-caption {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: -10px;
+  margin-bottom: 24px;
+  line-height: 1.6;
+  text-align: center;
+  font-style: italic;
+}
+
+.reader-body .cozy-gallery-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
+  max-width: 100%;
+}
+
 .reader-body code {
   font-family: 'Courier New', Courier, monospace;
   background-color: var(--bg-color);
