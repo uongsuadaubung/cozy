@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class VnReviewScraper implements Scraper {
@@ -41,11 +42,8 @@ export class VnReviewScraper implements Scraper {
             ? href
             : `https://vnreview.vn${href}`;
 
-          // Extract unique ID from url (XenForo pattern matching last digit id)
-          const idMatch = postUrl.match(/\.(\d+)\/?$/);
-          const id = idMatch
-            ? `vnreview-${idMatch[1]}`
-            : `vnreview-${encodeURIComponent(postUrl).slice(-20)}`;
+          // Extract unique ID from url
+          const id = getPostId(this.source, postUrl);
 
           // Extract author
           const author = $el.find(".author-block").first().text().trim() ||

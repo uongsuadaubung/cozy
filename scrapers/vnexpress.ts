@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 
 import { COMMON_HEADERS } from "./constants.ts";
 
@@ -51,10 +52,7 @@ export class VnExpressScraper implements Scraper {
             : `https://vnexpress.net${href}`;
 
           // Extract ID from URL
-          const idMatch = postUrl.match(/-(\d+)\.html/);
-          const id = idMatch
-            ? `vnexpress-${idMatch[1]}`
-            : `vnexpress-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = getPostId(this.source, postUrl);
 
           // Extract created time
           const timeEl = $el.find(".time-ago").first();
@@ -110,6 +108,19 @@ export class VnExpressScraper implements Scraper {
     const html = await response.text();
     const $ = cheerio.load(html);
 
+    // Check if it is a Podcast / Evisual / Audio page
+    const titleText = $("title").text() || $("meta[property='og:title']").attr("content") || "";
+    const itsType = $("meta[name='its_type']").attr("content") || "";
+    if (
+      itsType === "evisual" ||
+      titleText.toLowerCase().includes("nghe podcast") ||
+      titleText.toLowerCase().includes("nghe audio") ||
+      $("#wrapper-evisual").length > 0 ||
+      $(".section-detail-podcast").length > 0
+    ) {
+      throw new Error("Bài viết thuộc thể loại Podcast/Audio và không được hỗ trợ.");
+    }
+
     // VnExpress content is in .fck_detail (e.g. section.fck_detail or article.fck_detail)
     const contentEl = $(".fck_detail");
 
@@ -117,9 +128,14 @@ export class VnExpressScraper implements Scraper {
       return "Không tìm thấy thẻ chứa nội dung bài viết.";
     }
 
+    // Check if it is a quiz/multiple-choice interactive post
+    if (contentEl.find("[data-component-type='quiz']").length > 0) {
+      throw new Error("Bài viết thuộc thể loại trắc nghiệm (quiz) và không được hỗ trợ.");
+    }
+
     // Clean up unnecessary elements
     contentEl.find(
-      "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor, .social-com",
+      "script, style, iframe, .ad-wrapper, .ad-position, .link-content-footer, .cf-monitor, .social-com, .social_pin, .neo-pin, .topbar-sticky, .action_thumb, .item_slide_show.hidden, .info-detail-tg, .follow_author",
     ).remove();
 
     // Remove the title/description elements if nested inside .fck_detail to prevent double rendering in UI
@@ -162,6 +178,59 @@ export class VnExpressScraper implements Scraper {
       const img = $div.find("img");
       if (img.length) {
         $div.replaceWith(img);
+      }
+    });
+
+    // Process visible item_slide_show elements to extract images and captions cleanly
+    contentEl.find(".item_slide_show").each((_, el) => {
+      const $el = $(el);
+      const img = $el.find("img");
+      if (!img.length) {
+        $el.remove();
+        return;
+      }
+      
+      const captionEl = $el.find(".desc_cation").not("[style*='display: none']").not("[style*='height: 0']");
+      const captionHtml = captionEl.html() || "";
+      
+      const figure = $("<figure class=\"cozy-picture\"></figure>");
+      // Clone the already cleaned image
+      figure.append(img.first().clone());
+      
+      if (captionHtml.trim()) {
+        figure.append($(`<figcaption class="cozy-caption">${captionHtml}</figcaption>`));
+      }
+      
+      $el.replaceWith(figure);
+    });
+
+    // Process gallery-detail-photo elements to extract images and captions cleanly
+    contentEl.find(".gallery-detail-photo").each((_, el) => {
+      const $el = $(el);
+      const figures: cheerio.Cheerio<any>[] = [];
+      
+      $el.find(".item_gallery_new img").each((_, imgEl) => {
+        const $img = $(imgEl);
+        const rawCaption = $img.attr("data-caption") || "";
+        
+        const figure = $("<figure class=\"cozy-picture\"></figure>");
+        // Clone the already cleaned image and strip data-caption (since it's now in figcaption)
+        const clonedImg = $img.clone().removeAttr("data-caption");
+        figure.append(clonedImg);
+        
+        if (rawCaption.trim()) {
+          figure.append($(`<figcaption class="cozy-caption">${rawCaption}</figcaption>`));
+        }
+        
+        figures.push(figure);
+      });
+      
+      if (figures.length > 0) {
+        const container = $("<div class=\"cozy-gallery-container\"></div>");
+        figures.forEach(fig => container.append(fig));
+        $el.replaceWith(container);
+      } else {
+        $el.remove();
       }
     });
 

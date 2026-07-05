@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class HackerNewsScraper implements Scraper {
@@ -36,11 +37,8 @@ export class HackerNewsScraper implements Scraper {
 
       const summary = $el.find(".home-desc").text().trim();
 
-      // Trích xuất ID duy nhất từ slug URL (ví dụ: .../some-slug.html -> thn-some-slug)
-      const idMatch = postUrl.match(/\/([^\/]+)\.html$/);
-      const id = idMatch
-        ? `thn-${idMatch[1]}`
-        : `thn-${encodeURIComponent(postUrl).slice(-20)}`;
+      // Trích xuất ID duy nhất từ slug URL
+      const id = getPostId(this.source, postUrl);
 
       // Trích xuất ngày đăng từ label: ví dụ "Jun 29, 2026"
       const labelText = $el.find(".item-label").text().trim();

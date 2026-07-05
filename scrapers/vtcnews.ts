@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 import { processPostImages } from "./image_downloader.ts";
 
@@ -48,10 +49,7 @@ export class VTCNewsScraper implements Scraper {
             : `https://vtcnews.vn${href}`;
 
           // Trích xuất ID bài viết dạng vtcnews-xxxxxx
-          const idMatch = postUrl.match(/-ar(\d+)\.html/);
-          const id = idMatch
-            ? `vtcnews-${idMatch[1]}`
-            : `vtcnews-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = getPostId(this.source, postUrl);
 
           // Trích xuất thời gian đăng bài
           const timeEl = $el.find("footer .time-update").first();

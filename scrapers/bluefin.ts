@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class BluefinScraper implements Scraper {
@@ -39,11 +40,8 @@ export class BluefinScraper implements Scraper {
         ? href
         : `https://docs.projectbluefin.io${href}`;
 
-      // Trích xuất ID duy nhất từ slug URL (ví dụ: /blog/introducing-knuckle/ -> bluefin-introducing-knuckle)
-      const idMatch = postUrl.match(/\/blog\/([^\/]+)\/?$/);
-      const id = idMatch
-        ? `bluefin-${idMatch[1]}`
-        : `bluefin-${encodeURIComponent(postUrl).slice(-20)}`;
+      // Trích xuất ID duy nhất từ slug URL
+      const id = getPostId(this.source, postUrl);
 
       // Trích xuất ngày đăng từ attribute datetime của thẻ <time>
       const timeEl = $el.find("time").first();

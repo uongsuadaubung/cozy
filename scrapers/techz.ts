@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 function parseRelativeTime(text: string): number {
@@ -109,10 +110,7 @@ export class TechZScraper implements Scraper {
             : `https://www.techz.vn${href}`;
 
           // Extract ID from slug like ylt699367.html
-          const idMatch = postUrl.match(/-ylt(\d+)\.html$/);
-          const id = idMatch
-            ? `techz-${idMatch[1]}`
-            : `techz-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = getPostId(this.source, postUrl);
 
           // Extract category/author
           const author =

@@ -1,8 +1,18 @@
+import * as cheerio from "cheerio";
 import { scrapers } from "./scrapers/mod.ts";
+import { getPostId } from "./scrapers/utils.ts";
 import { Post } from "./types.ts";
 
 interface PostWithContent extends Post {
   content?: string;
+}
+
+function hasValidContent(post?: PostWithContent): boolean {
+  return !!(
+    post &&
+    post.content &&
+    !post.content.includes("Nội dung bài viết chưa được cào")
+  );
 }
 
 // Cleanup orphaned images that are no longer referenced in any active post content
@@ -181,6 +191,19 @@ async function prepareGitBranch(
   }
 }
 
+async function checkGitConfig(dir: string, key: string): Promise<boolean> {
+  try {
+    const checkCmd = new Deno.Command("git", {
+      args: ["config", key],
+      cwd: dir,
+    });
+    const { success, stdout } = await checkCmd.output();
+    return success && new TextDecoder().decode(stdout).trim() !== "";
+  } catch (_) {
+    return false;
+  }
+}
+
 // Helper to push Git branch with squashed history (exactly 1 commit on the remote branch)
 async function pushGitBranch(
   dir: string,
@@ -219,6 +242,17 @@ async function pushGitBranch(
         "user.email",
         "41898282+github-actions[bot]@users.noreply.github.com",
       );
+    } else {
+      // Check if git user name/email are configured locally or globally
+      const hasUserName = await checkGitConfig(dir, "user.name");
+      const hasUserEmail = await checkGitConfig(dir, "user.email");
+
+      if (!hasUserName) {
+        await git("config", "user.name", "cozy-bot");
+      }
+      if (!hasUserEmail) {
+        await git("config", "user.email", "cozy-bot@localhost");
+      }
     }
 
     await git("add", ".");
@@ -255,6 +289,44 @@ async function pushGitBranch(
   }
 }
 
+async function fetchMetadataFromUrl(url: string, source: string): Promise<{ title: string; summary?: string; author: string }> {
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "PostmanRuntime/7.54.0",
+      "Accept": "*/*",
+      "Cache-Control": "no-cache",
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${url}, status: ${response.status}`);
+  }
+  const html = await response.text();
+  const $ = cheerio.load(html);
+  
+  // Extract Title
+  let title = $("meta[property='og:title']").attr("content") || $("title").text() || $("h1").text() || "";
+  // Clean up title (remove site suffix if present)
+  title = title.replace(/\s*-\s*VnExpress\s*$/, "")
+               .replace(/\s*\|\s*Báo Dân trí\s*$/, "")
+               .replace(/\s*-\s*Tin tức online\s*$/, "")
+               .trim();
+               
+  // Extract Description/Summary
+  const summary = $("meta[property='og:description']").attr("content") || $("meta[name='description']").attr("content") || undefined;
+  
+  // Default Author
+  let author = source;
+  if (source === "VnExpress") author = "VnExpress";
+  else if (source === "Dantri") author = "Dân trí";
+  else if (source === "GenK") author = "GenK";
+  else {
+    const metaAuthor = $("meta[name='author']").attr("content") || $("meta[property='og:article:author']").attr("content");
+    if (metaAuthor) author = metaAuthor.trim();
+  }
+  
+  return { title, summary, author };
+}
+
 async function runSync() {
   console.log("=========================================");
   console.log("🔄 Starting Cozy Archiver Sync...");
@@ -274,10 +346,58 @@ async function runSync() {
 
   // Parse arguments
   const filterSource = Deno.args.filter((arg) => !arg.startsWith("-"))[0];
-  const forceRecrawl = Deno.args.includes("--force") ||
-    Deno.args.includes("-f");
+  const isUrl = filterSource && (filterSource.startsWith("http://") || filterSource.startsWith("https://"));
+  
+  // Default to force for single URL sync, otherwise check Deno.args
+  const forceRecrawl = isUrl || Deno.args.includes("--force") || Deno.args.includes("-f");
 
-  const activeScrapers = filterSource
+  let matchedScraper = null;
+  let targetSource = "";
+  if (isUrl) {
+    try {
+      const urlObj = new URL(filterSource);
+      const host = urlObj.hostname.replace("www.", "");
+      
+      const DOMAIN_TO_SOURCE_MAP: Record<string, string> = {
+        "vnexpress.net": "VnExpress",
+        "dantri.com.vn": "Dantri",
+        "genk.vn": "GenK",
+        "news.ycombinator.com": "HackerNews",
+        "omgubuntu.co.uk": "OmgUbuntu",
+        "projectbluefin.io": "Bluefin",
+        "system76.com": "System76",
+        "windowslatest.com": "WindowsLatest",
+        "omglinux.com": "OmgLinux",
+        "windowscentral.com": "WindowsCentral",
+        "tinhte.vn": "Tinhte",
+        "vnreview.vn": "VnReview",
+        "techz.vn": "TechZ",
+        "vtc.vn": "VTCNews",
+        "vtcnews.vn": "VTCNews",
+      };
+      
+      for (const [domain, srcName] of Object.entries(DOMAIN_TO_SOURCE_MAP)) {
+        if (host === domain || host.endsWith("." + domain)) {
+          targetSource = srcName;
+          break;
+        }
+      }
+      
+      if (targetSource) {
+        matchedScraper = scrapers.find(s => s.source === targetSource);
+      }
+    } catch (e) {
+      console.error("❌ Invalid URL passed as argument:", filterSource, e);
+      Deno.exit(1);
+    }
+    
+    if (!matchedScraper) {
+      console.error(`❌ No matching scraper found for URL: ${filterSource}`);
+      Deno.exit(1);
+    }
+  }
+
+  const activeScrapers = (filterSource && !isUrl)
     ? scrapers.filter((s) =>
       s.source.toLowerCase() === filterSource.toLowerCase() ||
       s.source.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() ===
@@ -285,13 +405,13 @@ async function runSync() {
     )
     : scrapers;
 
-  if (filterSource && activeScrapers.length === 0) {
+  if (filterSource && !isUrl && activeScrapers.length === 0) {
     console.log(
       `⚠️ Warning: No scraper found matching "${filterSource}". Running all scrapers.`,
     );
   }
 
-  const scrapersToRun = (filterSource && activeScrapers.length > 0)
+  const scrapersToRun = (filterSource && !isUrl && activeScrapers.length > 0)
     ? activeScrapers
     : scrapers;
 
@@ -309,70 +429,107 @@ async function runSync() {
   let newPostsCount = 0;
   let errorCount = 0;
 
-  // 2. Run scrapers
-  for (const scraper of scrapersToRun) {
-    console.log(`\n📡 Scraping source: ${scraper.source}...`);
-    try {
-      const allScrapedPosts = await scraper.fetchPosts();
-      console.log(
-        `Found ${allScrapedPosts.length} articles on front page of ${scraper.source}.`,
-      );
+  // 2. Run scrapers or sync single URL
+  if (isUrl && matchedScraper) {
+    console.log(`\n🎯 Single URL Sync: ${filterSource} (Source: ${matchedScraper.source})`);
+    const id = getPostId(matchedScraper.source, filterSource);
+    const existing = postsMap.get(id);
 
-      // Chỉ giữ lại tối đa 50 tin mới nhất để xử lý, tránh fetch nội dung của các tin cũ thừa
-      const scrapedPosts = allScrapedPosts.slice(0, MAX_POSTS_PER_SOURCE);
-      if (allScrapedPosts.length > MAX_POSTS_PER_SOURCE) {
+    if (existing && hasValidContent(existing) && !forceRecrawl) {
+      console.log(`   [SKIP] Post already exists and content is cached. Use --force to recrawl.`);
+    } else {
+      console.log(`   [FETCH] Fetching metadata and content...`);
+      try {
+        const metadata = await fetchMetadataFromUrl(filterSource, matchedScraper.source);
+        const content = await matchedScraper.fetchContent(filterSource);
+        
+        const postWithContent: PostWithContent = {
+          id,
+          title: metadata.title,
+          url: filterSource,
+          source: matchedScraper.source as any,
+          author: metadata.author,
+          createdAt: existing ? existing.createdAt : Date.now(),
+          summary: metadata.summary,
+          content: content || "<p>Nội dung bài viết chưa được cào.</p>",
+        };
+        postsMap.set(id, postWithContent);
+        newPostsCount++;
+        console.log(`✅ Single URL Sync Completed!`);
+      } catch (err) {
+        console.error(`❌ Failed to sync single URL:`, err);
+        errorCount++;
+      }
+    }
+  } else {
+    for (const scraper of scrapersToRun) {
+      console.log(`\n📡 Scraping source: ${scraper.source}...`);
+      try {
+        const allScrapedPosts = await scraper.fetchPosts();
         console.log(
-          `   [INFO] Sliced scraped list from ${allScrapedPosts.length} to ${MAX_POSTS_PER_SOURCE} newest posts.`,
+          `Found ${allScrapedPosts.length} articles on front page of ${scraper.source}.`,
         );
-      }
 
-      for (const scrapedPost of scrapedPosts) {
-        // If post already exists, has valid content (not a placeholder), and we are not forcing a recrawl, keep it
-        const existing = postsMap.get(scrapedPost.id);
-        const hasValidContent = existing &&
-          existing.content &&
-          !existing.content.includes("Nội dung bài viết chưa được cào");
-
-        if (existing && hasValidContent && !forceRecrawl) {
-          // Update details if they changed, but keep content and original creation time
-          postsMap.set(scrapedPost.id, {
-            ...scrapedPost,
-            createdAt: existing.createdAt, // Giữ nguyên thời gian đăng bài gốc
-            content: existing.content,
-          });
-          continue;
-        }
-
-        // New post or forced recrawl! Fetch detail content
-        console.log(`   [FETCH] Fetching content for: "${scrapedPost.title}"`);
-        try {
-          // Wait slightly to avoid rate-limiting
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          const content = await scraper.fetchContent(scrapedPost.url);
-          const postWithContent: PostWithContent = {
-            ...scrapedPost,
-            content: content || "<p>Nội dung bài viết chưa được cào.</p>",
-          };
-          postsMap.set(scrapedPost.id, postWithContent);
-          newPostsCount++;
-        } catch (contentErr) {
-          console.error(
-            `   ❌ Failed to fetch content for ${scrapedPost.url}:`,
-            contentErr,
+        // Chỉ giữ lại tối đa 50 tin mới nhất để xử lý, tránh fetch nội dung của các tin cũ thừa
+        const scrapedPosts = allScrapedPosts.slice(0, MAX_POSTS_PER_SOURCE);
+        if (allScrapedPosts.length > MAX_POSTS_PER_SOURCE) {
+          console.log(
+            `   [INFO] Sliced scraped list from ${allScrapedPosts.length} to ${MAX_POSTS_PER_SOURCE} newest posts.`,
           );
-          // Save with the uniform placeholder so we will try to crawl it again on next run
-          postsMap.set(scrapedPost.id, {
-            ...scrapedPost,
-            content: "<p>Nội dung bài viết chưa được cào.</p>",
-          });
-          newPostsCount++; // Count as new since we added it to map
         }
+
+        for (const scrapedPost of scrapedPosts) {
+          // If post already exists, has valid content (not a placeholder), and we are not forcing a recrawl, keep it
+          const existing = postsMap.get(scrapedPost.id);
+
+          if (existing && hasValidContent(existing) && !forceRecrawl) {
+            // Update details if they changed, but keep content and original creation time
+            postsMap.set(scrapedPost.id, {
+              ...scrapedPost,
+              createdAt: existing.createdAt, // Giữ nguyên thời gian đăng bài gốc
+              content: existing.content,
+            });
+            continue;
+          }
+
+          // New post or forced recrawl! Fetch detail content
+          console.log(`   [FETCH] Fetching content for: "${scrapedPost.title}"`);
+          try {
+            // Wait slightly to avoid rate-limiting
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
+            const content = await scraper.fetchContent(scrapedPost.url);
+            const postWithContent: PostWithContent = {
+              ...scrapedPost,
+              content: content || "<p>Nội dung bài viết chưa được cào.</p>",
+            };
+            postsMap.set(scrapedPost.id, postWithContent);
+            newPostsCount++;
+          } catch (contentErr) {
+            console.error(
+              `   ❌ Failed to fetch content for ${scrapedPost.url}:`,
+              contentErr,
+            );
+
+            const errMsg = contentErr instanceof Error ? contentErr.message : String(contentErr);
+            if (errMsg.includes("không được hỗ trợ") || errMsg.includes("không hỗ trợ")) {
+              console.log(`   [SKIP] Discarding unsupported article: ${scrapedPost.url}`);
+              continue;
+            }
+
+            // Save with the uniform placeholder so we will try to crawl it again on next run
+            postsMap.set(scrapedPost.id, {
+              ...scrapedPost,
+              content: "<p>Nội dung bài viết chưa được cào.</p>",
+            });
+            newPostsCount++; // Count as new since we added it to map
+          }
+        }
+        console.log(`✅ Completed sync for ${scraper.source}.`);
+      } catch (scraperErr) {
+        console.error(`❌ Error scraping ${scraper.source}:`, scraperErr);
+        errorCount++;
       }
-      console.log(`✅ Completed sync for ${scraper.source}.`);
-    } catch (scraperErr) {
-      console.error(`❌ Error scraping ${scraper.source}:`, scraperErr);
-      errorCount++;
     }
   }
 

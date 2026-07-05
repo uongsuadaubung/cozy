@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class OmgLinuxScraper implements Scraper {
@@ -39,15 +40,8 @@ export class OmgLinuxScraper implements Scraper {
       const dateText = timeEl.attr("datetime") || timeEl.text().trim();
       const createdAt = dateText ? Date.parse(dateText) : Date.now();
 
-      // Trích xuất ID duy nhất từ slug URL (ví dụ: .../kde-linux-immutable-os/ -> omgl-kde-linux-immutable-os)
-      let slug = "";
-      try {
-        const pathParts = new URL(href).pathname.split("/").filter(Boolean);
-        slug = pathParts[pathParts.length - 1];
-      } catch {
-        slug = title;
-      }
-      const id = `omgl-${slug}`;
+      // Trích xuất ID duy nhất từ slug URL
+      const id = getPostId(this.source, href);
 
       // Giữ nguyên thứ tự xuất hiện bằng cách trừ đi index * 60000ms
       const finalCreatedAt = createdAt - (index * 60 * 1000);

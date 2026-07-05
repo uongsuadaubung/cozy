@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class WindowsLatestScraper implements Scraper {
@@ -44,16 +45,9 @@ export class WindowsLatestScraper implements Scraper {
         .trim();
 
       // Trích xuất slug URL làm ID
-      let slug = "";
-      try {
-        const pathParts = new URL(href).pathname.split("/").filter(Boolean);
-        slug = pathParts[pathParts.length - 1];
-      } catch {
-        slug = title;
-      }
-
+      const id = getPostId(this.source, href);
       posts.push({
-        id: `wl-${slug}`,
+        id,
         title,
         url: href,
         source: this.source,

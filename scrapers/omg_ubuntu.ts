@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 async function sha256(str: string): Promise<string> {
@@ -226,10 +227,7 @@ export class OmgUbuntuScraper implements Scraper {
 
           const summary = $el.find(".portholes-layout__subtitle").text().trim();
 
-          const idMatch = postUrl.match(/\/([^\/]+)\/?$/);
-          const id = idMatch
-            ? `omg-${idMatch[1]}`
-            : `omg-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = getPostId(this.source, postUrl);
 
           // Tìm ngày đăng bài từ class .layout__date nếu có
           let foundDateText = "";

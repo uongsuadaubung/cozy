@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 async function sha256(str: string): Promise<string> {
@@ -55,15 +56,8 @@ export class TinhteScraper implements Scraper {
 
       const summary = $art.find(".excerpt").text().trim();
 
-      // Trích xuất thread ID từ URL
-      let threadId = "";
-      const match = postUrl.match(/\.(\d+)\/?$/);
-      if (match) {
-        threadId = match[1];
-      } else {
-        threadId = await sha256(postUrl);
-      }
-      const id = `tt-${threadId}`;
+      // Trích xuất thread ID từ URL làm ID bài viết
+      const id = getPostId(this.source, postUrl);
 
       // Tinh tế homepage không hiển thị timestamp chính xác,
       // Ta gán createdAt lùi dần để duy trì thứ tự hiển thị chính xác của tin

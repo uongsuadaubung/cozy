@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { z } from "zod";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 import { processPostImages } from "./image_downloader.ts";
 
@@ -54,6 +55,18 @@ export class DantriScraper implements Scraper {
           return;
         }
 
+        const title = titleLink.text().trim() || titleLink.attr("title") || "";
+        if (!title) return;
+
+        // Skip if title or list item icon indicates Video / Dân trí 360
+        if (
+          title.toLowerCase().includes("dân trí 360") ||
+          title.toLowerCase().includes("dantri 360") ||
+          $el.find(".article-ico i.video, .article-ico i.play, .article-ico .video, .article-ico .play").length > 0
+        ) {
+          return;
+        }
+
         // Skip non-standard articles (videos, live coverage, photo essays)
         const label = titleLink.attr("data-label");
         if (
@@ -62,19 +75,11 @@ export class DantriScraper implements Scraper {
           return;
         }
 
-        const title = titleLink.text().trim() || titleLink.attr("title") || "";
-        if (!title) return;
-
         const summary = $el.find(".article-excerpt").text().trim();
 
         // Trích xuất ID bài viết từ URL hoặc attribute data-id
         const dataId = $el.attr("data-id");
-        const idMatch = postUrl.match(/-(\d+)\.htm$/);
-        const id = dataId
-          ? `dantri-${dataId}`
-          : (idMatch
-            ? `dantri-${idMatch[1]}`
-            : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
+        const id = getPostId(this.source, postUrl, dataId);
 
         // Phân tích ngày giờ từ data-id (định dạng YYYYMMDDHHmmssSSS)
         let createdAt = Date.now();
@@ -167,6 +172,19 @@ export class DantriScraper implements Scraper {
                 return;
               }
 
+              const title = titleLink.text().trim() ||
+                titleLink.attr("title") || "";
+              if (!title) return;
+
+              // Skip if title or list item icon indicates Video / Dân trí 360
+              if (
+                title.toLowerCase().includes("dân trí 360") ||
+                title.toLowerCase().includes("dantri 360") ||
+                $el.find(".article-ico i.video, .article-ico i.play, .article-ico .video, .article-ico .play").length > 0
+              ) {
+                return;
+              }
+
               // Skip non-standard articles (videos, live coverage, photo essays)
               const label = titleLink.attr("data-label");
               if (
@@ -176,19 +194,10 @@ export class DantriScraper implements Scraper {
                 return;
               }
 
-              const title = titleLink.text().trim() ||
-                titleLink.attr("title") || "";
-              if (!title) return;
-
               const summary = $el.find(".article-excerpt").text().trim();
 
               const dataId = $el.attr("data-id");
-              const idMatch = postUrl.match(/-(\d+)\.htm$/);
-              const id = dataId
-                ? `dantri-${dataId}`
-                : (idMatch
-                  ? `dantri-${idMatch[1]}`
-                  : `dantri-${encodeURIComponent(postUrl).slice(-20)}`);
+              const id = getPostId(this.source, postUrl, dataId);
 
               let createdAt = Date.now();
               const timePart = dataId || (idMatch ? idMatch[1] : "");
@@ -255,6 +264,17 @@ export class DantriScraper implements Scraper {
 
     const html = await response.text();
     const $ = cheerio.load(html);
+
+    // Check if the page is a video or Dân trí 360 page
+    const titleText = $("title").text() || $("meta[property='og:title']").attr("content") || "";
+    if (
+      titleText.toLowerCase().includes("dân trí 360") ||
+      titleText.toLowerCase().includes("dantri 360") ||
+      $("#desktop-dt360").length > 0 ||
+      $("[data-page-type='detail-video']").length > 0
+    ) {
+      throw new Error("Bài viết này thuộc chuyên mục Video (Dân trí 360) và không được hỗ trợ.");
+    }
 
     // DanTri content is inside #desktop-in-article
     let contentEl = $("#desktop-in-article");

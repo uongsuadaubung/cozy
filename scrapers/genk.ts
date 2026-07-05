@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 export class GenKScraper implements Scraper {
@@ -50,10 +51,7 @@ export class GenKScraper implements Scraper {
             : `https://genk.vn${href}`;
 
           // Trích xuất ID duy nhất từ slug URL
-          const idMatch = postUrl.match(/-(\d+)\.chn$/);
-          const id = idMatch
-            ? `genk-${idMatch[1]}`
-            : `genk-${encodeURIComponent(postUrl).slice(-20)}`;
+          const id = getPostId(this.source, postUrl);
 
           // Trích xuất ngày đăng từ attribute title của thẻ thời gian
           const timeEl = $el.find(".knswli-time, .time, .date-time").first();

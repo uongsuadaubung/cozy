@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { Post, Scraper } from "../types.ts";
+import { getPostId } from "./utils.ts";
 import { COMMON_HEADERS } from "./constants.ts";
 
 async function sha256(str: string): Promise<string> {
@@ -45,14 +46,7 @@ export class WindowsCentralScraper implements Scraper {
       const summary = cheerio.load(description).text().trim();
 
       // Trích xuất slug URL làm ID bài viết
-      let slug = "";
-      try {
-        const pathParts = new URL(postUrl).pathname.split("/").filter(Boolean);
-        slug = pathParts[pathParts.length - 1];
-      } catch {
-        slug = await sha256(postUrl);
-      }
-      const id = `wc-${slug}`;
+      const id = getPostId(this.source, postUrl);
 
       posts.push({
         id,
