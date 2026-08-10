@@ -155,6 +155,15 @@ export function App() {
     }
   }, [activePostId]);
 
+  // Dynamically update document title based on active post
+  useEffect(() => {
+    if (activePost) {
+      document.title = `${activePost.title} | Cozy Feed`;
+    } else {
+      document.title = "Cozy Feed | Trang đọc tin cá nhân";
+    }
+  }, [activePost]);
+
   // Compute text for relative updated time
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdated) return "Đang kiểm tra...";
