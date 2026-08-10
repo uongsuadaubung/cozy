@@ -253,6 +253,10 @@ export function App() {
   const handleSelectSource = (source: string) => {
     setActiveSource(source);
     globalThis.location.hash = source;
+    setActivePostId(null);
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete("post");
+    globalThis.history.pushState({}, "", url.toString());
   };
 
   const handleSelectPost = (postId: string) => {

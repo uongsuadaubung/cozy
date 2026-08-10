@@ -25,9 +25,9 @@ export function useReaderHotkeys({
         return;
       }
 
-      if (e.key === "ArrowLeft" && onPrev) {
+      if ((e.key === "ArrowLeft" || e.key === "k") && onPrev) {
         onPrev();
-      } else if (e.key === "ArrowRight" && onNext) {
+      } else if ((e.key === "ArrowRight" || e.key === "j") && onNext) {
         onNext();
       } else if (activePostId) {
         const readerPane = document.getElementById("reader-pane");
